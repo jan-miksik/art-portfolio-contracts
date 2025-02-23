@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import "openzeppelin-contracts/contracts/access/Ownable.sol";
-import "openzeppelin-contracts/contracts/utils/ReentrancyGuard.sol";
-import "openzeppelin-contracts/contracts/interfaces/IERC2981.sol";
-import "openzeppelin-contracts/contracts/utils/Strings.sol";
-import "openzeppelin-contracts/contracts/utils/Base64.sol";
-import "openzeppelin-contracts/contracts/token/ERC721/ERC721.sol";
-import "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
-import "openzeppelin-contracts/contracts/utils/Address.sol";
+import '@openzeppelin/contracts/access/Ownable.sol';
+import '@openzeppelin/contracts/utils/ReentrancyGuard.sol';
+import '@openzeppelin/contracts/interfaces/IERC2981.sol';
+import '@openzeppelin/contracts/utils/Strings.sol';
+import '@openzeppelin/contracts/utils/Base64.sol';
+import '@openzeppelin/contracts/token/ERC721/ERC721.sol';
+import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
+import '@openzeppelin/contracts/utils/Address.sol';
 
 error EmptyTokenURI();
 error ZeroAddress();
@@ -17,6 +17,9 @@ error NoEtherToWithdraw();
 error NoTokensToWithdraw();
 error TokenTransferFailed();
 error SameRoyaltyReceiver();
+error EmptyName();
+error EmptyDescription();
+error EmptyImage();
 
 contract VariousPicturesCollection is ERC721, IERC2981, Ownable, ReentrancyGuard {
     constructor() ERC721('Various Pictures', 'VP') Ownable(msg.sender) {
@@ -76,6 +79,10 @@ contract VariousPicturesCollection is ERC721, IERC2981, Ownable, ReentrancyGuard
         Address.sendValue(payable(owner()), balance);
     }
 
+    /**
+     * @param token is the ERC20 token that will be withdrawn.
+     * @param to is the address that will receive the tokens.
+     */
     function withdrawERC20Token(IERC20 token, address to) external onlyOwner nonReentrant {
         uint256 amount = token.balanceOf(address(this));
         if (amount == 0) revert NoTokensToWithdraw();
@@ -188,9 +195,9 @@ contract VariousPicturesCollection is ERC721, IERC2981, Ownable, ReentrancyGuard
         string memory description,
         string memory image
     ) public pure returns (string memory) {
-        require(bytes(name).length > 0, "Name cannot be empty");
-        require(bytes(description).length > 0, "Description cannot be empty");
-        require(bytes(image).length > 0, "Image URI cannot be empty");
+        if (bytes(name).length == 0) revert EmptyName();
+        if (bytes(description).length == 0) revert EmptyDescription();
+        if (bytes(image).length == 0) revert EmptyImage();
 
         bytes memory dataURI = abi.encodePacked(
             '{',
