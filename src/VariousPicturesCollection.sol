@@ -19,11 +19,20 @@ error TokenTransferFailed();
 error SameRoyaltyReceiver();
 error EmptyName();
 error EmptyImage();
-
+error EmptyMetadata();
+error EmptyURI();
 contract VariousPicturesCollection is ERC721, IERC2981, Ownable, ReentrancyGuard {
-    constructor() ERC721('Various Pictures', 'VP') Ownable(msg.sender) {
+    constructor(
+        string memory name,
+        string memory symbol,
+        string memory contractMetadataURI
+    ) ERC721(name, symbol) Ownable(msg.sender) {
+        if (bytes(contractMetadataURI).length == 0) revert EmptyMetadata();
         _royaltyReceiver = owner();
+        _contractMetadataURI = contractMetadataURI;
     }
+
+    string private _contractMetadataURI;
 
     /** MINTING **/
     
@@ -34,7 +43,7 @@ contract VariousPicturesCollection is ERC721, IERC2981, Ownable, ReentrancyGuard
     }
 
     /**
-     * @dev 
+     * @dev Mints a new NFT with specified metadata components to the owner
      * @param name The name of the NFT
      * @param image The URI pointing to the NFT's image
      * @notice safeMintWithMetadata using overloading to make some of the parameters optional
@@ -106,6 +115,8 @@ contract VariousPicturesCollection is ERC721, IERC2981, Ownable, ReentrancyGuard
         _nftCounter++;
     }
 
+
+
     /** PAYOUT **/
 
     function withdraw() public onlyOwner nonReentrant {
@@ -127,6 +138,8 @@ contract VariousPicturesCollection is ERC721, IERC2981, Ownable, ReentrancyGuard
     function checkERC20Balance(IERC20 token) external view returns (uint256) {
         return token.balanceOf(address(this));
     }
+
+
 
     /** ROYALTIES **/
 
@@ -179,29 +192,22 @@ contract VariousPicturesCollection is ERC721, IERC2981, Ownable, ReentrancyGuard
             super.supportsInterface(interfaceId));
     }
 
-    /** METADATA **/
 
-    /// @dev Collection metadata based on opensea standards
+
+    /** METADATA **/
+    /**
+     * @dev Updates the contract metadata URI.
+     * @param newURI The new metadata URI to set.
+     * @notice If the _royaltyReceiver is changed in the new URI it should be updated manually by the owner or maintainer in the contract as well, by setRoyaltyReceiver function.
+     * Marketplaces may use own internal setup which should be aligned with the will of the owner or maintainer of the contract
+     */
+    function updateContractMetadataURI(string memory newURI) external onlyOwner {
+        if (bytes(newURI).length == 0) revert EmptyURI();
+        _contractMetadataURI = newURI;
+    }
+
     function contractURI() public view returns (string memory) {
-        bytes memory dataURI = abi.encodePacked(
-            '{',
-            '"name": "Various Pictures",',
-            '"description": "Various pictures and different topics",',
-            '"image": "ipfs://bafybeidr3ssynrir4wez5bayz36qxk557irrrkwsplxeq3xdwieysxzlqq",', // TODO
-            '"external_link": "https://janmiksik.ooo",',
-            '"seller_fee_basis_points": 500,',
-            '"fee_recipient": "',
-            Strings.toHexString(uint160(_royaltyReceiver), 20),
-            '"',
-            '}'
-        );
-        return
-            string(
-                abi.encodePacked(
-                    'data:application/json;base64,',
-                    Base64.encode(dataURI)
-                )
-            );
+        return _contractMetadataURI;
     }
 
     mapping(uint256 => string) private _tokenURIs;

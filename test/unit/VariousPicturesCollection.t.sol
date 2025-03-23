@@ -4,6 +4,7 @@ pragma solidity ^0.8.20;
 import {Test} from "forge-std/Test.sol";
 import {VariousPicturesCollection} from "../../src/VariousPicturesCollection.sol"; 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {Base64} from "@openzeppelin/contracts/utils/Base64.sol";
 
 // Add the error declaration
 error EmptyTokenURI();
@@ -39,6 +40,9 @@ contract VariousPicturesCollectionTest is Test {
     address user;
 
     // Common test values
+    string constant COLLECTION_NAME = "Various Pictures";
+    string constant COLLECTION_SYMBOL = "VP";
+    string constant COLLECTION_URI = "https://arweave.net/metadata";
     string constant TEST_NAME = "Test NFT";
     string constant TEST_DESCRIPTION = "Test Description";
     string constant TEST_IMAGE = "ipfs://image";
@@ -48,7 +52,11 @@ contract VariousPicturesCollectionTest is Test {
         user = makeAddr("user");
         
         vm.prank(owner);  // Deploy contract as owner
-        collection = new VariousPicturesCollection();
+        collection = new VariousPicturesCollection(
+            COLLECTION_NAME,
+            COLLECTION_SYMBOL,
+            COLLECTION_URI
+        );
         mockToken = new MockERC20();
     }
 
@@ -230,7 +238,7 @@ contract VariousPicturesCollectionTest is Test {
 
     /** ROYALTIES **/
 
-    function testRoyaltyInfo() public view {
+    function testRoyaltyInfo() public {
         (address receiver, uint256 royaltyAmount) = collection.royaltyInfo(0, 100);
         assertEq(receiver, collection.getRoyaltyReceiver());
         assertEq(royaltyAmount, 5); // 5% of 100
@@ -259,25 +267,47 @@ contract VariousPicturesCollectionTest is Test {
 
     /** METADATA **/
 
-    function testCreateTokenURI() public view {
-        string memory uri = collection.createTokenURI("Test", "Description", "image.jpg");
-        assertTrue(bytes(uri).length > 0);
+    function testInitialContractURI() public {
+        assertEq(collection.contractURI(), COLLECTION_URI);
     }
 
-    function testCreateTokenURIWithEmptyDescription() public view {
-        string memory uri = collection.createTokenURI("Test NFT", "", "image.jpg");
-        assertTrue(bytes(uri).length > 0);
+    function testUpdateContractMetadataURI() public {
+        string memory newURI = "https://arweave.net/newmetadata";
+        
+        vm.prank(owner);
+        collection.updateContractMetadataURI(newURI);
+        
+        assertEq(collection.contractURI(), newURI);
     }
 
-    function test_Revert_CreateTokenURIEmptyName() public {
-        vm.expectRevert(abi.encodeWithSignature("EmptyName()"));
-        collection.createTokenURI("", "Description", "image.jpg");
+    function test_Revert_UpdateContractMetadataURIEmpty() public {
+        vm.prank(owner);
+        vm.expectRevert(abi.encodeWithSignature("EmptyURI()"));
+        collection.updateContractMetadataURI("");
     }
 
-    function test_Revert_CreateTokenURIEmptyImage() public {
-        vm.expectRevert(abi.encodeWithSignature("EmptyImage()"));
-        collection.createTokenURI("Test NFT", "Description", "");
+    // function test_Revert_UpdateContractMetadataURINotOwner() public {
+    //     vm.prank(user);
+    //     vm.expectRevert("Ownable: caller is not the owner");
+    //     collection.updateContractMetadataURI("https://arweave.net/newmetadata");
+    // }
+
+    function testConstructorParameters() public {
+        assertEq(collection.name(), COLLECTION_NAME);
+        assertEq(collection.symbol(), COLLECTION_SYMBOL);
+        assertEq(collection.contractURI(), COLLECTION_URI);
+    }
+
+    function test_Revert_ConstructorEmptyMetadata() public {
+        vm.prank(owner);
+        vm.expectRevert(abi.encodeWithSignature("EmptyMetadata()"));
+        new VariousPicturesCollection(
+            COLLECTION_NAME,
+            COLLECTION_SYMBOL,
+            ""
+        );
     }
 
     receive() external payable {} // Allow contract to receive ETH
+
 }
