@@ -18,7 +18,6 @@ error NoTokensToWithdraw();
 error TokenTransferFailed();
 error SameRoyaltyReceiver();
 error EmptyName();
-error EmptyDescription();
 error EmptyImage();
 
 contract VariousPicturesCollection is ERC721, IERC2981, Ownable, ReentrancyGuard {
@@ -35,20 +34,59 @@ contract VariousPicturesCollection is ERC721, IERC2981, Ownable, ReentrancyGuard
     }
 
     /**
-     * @dev Mints a new NFT with specified metadata components
-     * @param to The address that will receive the minted NFT
+     * @dev 
      * @param name The name of the NFT
-     * @param description A detailed description of the NFT
      * @param image The URI pointing to the NFT's image
-     * @notice Only the contract owner can call this function
-     * @notice All parameters must be non-empty strings
+     * @notice safeMintWithMetadata using overloading to make some of the parameters optional
+     */
+    function safeMintWithMetadata(
+        string memory name,
+        string memory image
+    ) public onlyOwner {
+        safeMintWithMetadata(owner(), name, "", image);
+    }
+
+    /**
+     * @dev Mints a new NFT with specified metadata
+     * @param to The address that will receive the minted NFT (optional, defaults to contract owner)
+     * @param name The name of the NFT
+     * @param image The URI pointing to the NFT's image
+     */
+    function safeMintWithMetadata(
+        address to,
+        string memory name,
+        string memory image
+    ) public onlyOwner {
+        safeMintWithMetadata(to, name, "", image);
+    }
+
+    /**
+     * @dev Mints a new NFT with specified metadata components to the owner
+     * @param name The name of the NFT
+     * @param description A detailed description of the NFT (optional)
+     * @param image The URI pointing to the NFT's image
+     */
+    function safeMintWithMetadata(
+        string memory name,
+        string memory description,
+        string memory image
+    ) public onlyOwner {
+        safeMintWithMetadata(owner(), name, description, image);
+    }
+
+    /**
+     * @dev Mints a new NFT with specified metadata components
+     * @param to The address that will receive the minted NFT (optional, defaults to contract owner)
+     * @param name The name of the NFT
+     * @param description A detailed description of the NFT (optional)
+     * @param image The URI pointing to the NFT's image
      */
     function safeMintWithMetadata(
         address to,
         string memory name,
         string memory description,
         string memory image
-    ) public onlyOwner nonReentrant {
+    ) public onlyOwner {
         string memory uri = createTokenURI(name, description, image);
         safeMintWithURI(to, uri);
     }
@@ -57,9 +95,6 @@ contract VariousPicturesCollection is ERC721, IERC2981, Ownable, ReentrancyGuard
      * @dev Mints a new NFT with a complete tokenURI
      * @param to The address that will receive the minted NFT
      * @param tokenURImetadata The complete URI containing the NFT's metadata
-     * @notice Only the contract owner can call this function
-     * @notice The tokenURI must be a non-empty string
-     * @notice The recipient address cannot be the zero address
      */
     function safeMintWithURI(address to, string memory tokenURImetadata) public onlyOwner nonReentrant {
         if (bytes(tokenURImetadata).length == 0) revert EmptyTokenURI();
@@ -150,7 +185,7 @@ contract VariousPicturesCollection is ERC721, IERC2981, Ownable, ReentrancyGuard
     function contractURI() public view returns (string memory) {
         bytes memory dataURI = abi.encodePacked(
             '{',
-            '"name": "Various pictures",',
+            '"name": "Various Pictures",',
             '"description": "Various pictures and different topics",',
             '"image": "ipfs://bafybeidr3ssynrir4wez5bayz36qxk557irrrkwsplxeq3xdwieysxzlqq",', // TODO
             '"external_link": "https://janmiksik.ooo",',
@@ -196,7 +231,6 @@ contract VariousPicturesCollection is ERC721, IERC2981, Ownable, ReentrancyGuard
         string memory image
     ) public pure returns (string memory) {
         if (bytes(name).length == 0) revert EmptyName();
-        if (bytes(description).length == 0) revert EmptyDescription();
         if (bytes(image).length == 0) revert EmptyImage();
 
         bytes memory dataURI = abi.encodePacked(
