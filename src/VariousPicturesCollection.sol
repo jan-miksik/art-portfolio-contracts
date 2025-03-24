@@ -9,6 +9,7 @@ import '@openzeppelin/contracts/utils/Base64.sol';
 import '@openzeppelin/contracts/token/ERC721/ERC721.sol';
 import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import '@openzeppelin/contracts/utils/Address.sol';
+import '@openzeppelin/contracts/token/ERC721/extensions/ERC721Burnable.sol';
 
 error EmptyTokenURI();
 error ZeroAddress();
@@ -21,18 +22,34 @@ error EmptyName();
 error EmptyImage();
 error EmptyMetadata();
 error EmptyURI();
-contract VariousPicturesCollection is ERC721, IERC2981, Ownable, ReentrancyGuard {
+error RoyaltyTooHigh();
+error SameRoyaltyBasisPoints();
+error NameTooLong();
+error DescriptionTooLong();
+error ImageURITooLong();
+
+contract VariousPicturesCollection is ERC721, IERC2981, Ownable, ERC721Burnable, ReentrancyGuard {
+    event NFTMinted(address indexed to, uint256 indexed tokenId, string name, string image);
+    event RoyaltyUpdated(uint256 oldRoyaltyBasisPoints, uint256 newRoyaltyBasisPoints);
+    event RoyaltyReceiverUpdated(address indexed previousReceiver, address indexed newReceiver);
+    event MetadataURIUpdated(string previousURI, string newURI);
+    event NFTBurned(uint256 indexed tokenId, address indexed burner);
+
     constructor(
         string memory name,
         string memory symbol,
-        string memory contractMetadataURI
+        string memory contractMetadataURI,
+        uint256 initialRoyaltyBasisPoints
     ) ERC721(name, symbol) Ownable(msg.sender) {
         if (bytes(contractMetadataURI).length == 0) revert EmptyMetadata();
-        _royaltyReceiver = owner();
+        if (initialRoyaltyBasisPoints > MAX_ROYALTY_BASIS_POINTS) revert RoyaltyTooHigh();
+        
         _contractMetadataURI = contractMetadataURI;
+        _royaltyBasisPoints = initialRoyaltyBasisPoints;
+        _royaltyReceiver = msg.sender;
     }
 
-    string private _contractMetadataURI;
+
 
     /** MINTING **/
     
@@ -43,7 +60,7 @@ contract VariousPicturesCollection is ERC721, IERC2981, Ownable, ReentrancyGuard
     }
 
     /**
-     * @dev Mints a new NFT with specified metadata components to the owner
+     * @dev Mints a new NFT to the contract owner
      * @param name The name of the NFT
      * @param image The URI pointing to the NFT's image
      * @notice safeMintWithMetadata using overloading to make some of the parameters optional
@@ -70,7 +87,7 @@ contract VariousPicturesCollection is ERC721, IERC2981, Ownable, ReentrancyGuard
     }
 
     /**
-     * @dev Mints a new NFT with specified metadata components to the owner
+     * @dev Mints a new NFT with specified metadata to the owner
      * @param name The name of the NFT
      * @param description A detailed description of the NFT (optional)
      * @param image The URI pointing to the NFT's image
@@ -96,8 +113,18 @@ contract VariousPicturesCollection is ERC721, IERC2981, Ownable, ReentrancyGuard
         string memory description,
         string memory image
     ) public onlyOwner {
-        string memory uri = createTokenURI(name, description, image);
-        safeMintWithURI(to, uri);
+        if (to == address(0)) revert ZeroAddress();
+        _validateMetadata(name, description, image);
+        
+        uint256 tokenId;
+        unchecked {
+            tokenId = _nftCounter++;
+        }
+        
+        _safeMint(to, tokenId);
+        _setTokenURI(tokenId, createTokenURI(name, description, image));
+        
+        emit NFTMinted(to, tokenId, name, image);
     }
 
     /**
@@ -118,6 +145,8 @@ contract VariousPicturesCollection is ERC721, IERC2981, Ownable, ReentrancyGuard
 
 
     /** PAYOUT **/
+
+    using Address for address payable;
 
     function withdraw() public onlyOwner nonReentrant {
         uint256 balance = address(this).balance;
@@ -145,9 +174,14 @@ contract VariousPicturesCollection is ERC721, IERC2981, Ownable, ReentrancyGuard
 
     /**
      * @dev _royaltyReceiver is accepted by some marketplaces.
-     * @dev Other marketplaces may send royalty based on specification in contractURI metadata.
+     * @dev _royaltyBasisPoints is the royalty percentage in basis points (e.g., 500 = 5%)
+     * @dev MAX_ROYALTY_BASIS_POINTS is the maximum royalty percentage (10000 = 100%)
+     * @notice the real royalty percentage may depend on the marketplace limits
+     * @notice marketplaces can have own way how implementing royalties
      */
-    address private _royaltyReceiver = address(this);
+    address private _royaltyReceiver;
+    uint256 private _royaltyBasisPoints;
+    uint256 private constant MAX_ROYALTY_BASIS_POINTS = 10000;
 
     function _setRoyaltyReceiver(address newRoyaltyReceiver)
         internal
@@ -158,8 +192,13 @@ contract VariousPicturesCollection is ERC721, IERC2981, Ownable, ReentrancyGuard
         _royaltyReceiver = newRoyaltyReceiver;
     }
 
-    function setRoyaltyReceiver(address newRoyaltyReceiver) external onlyOwner {
-        _setRoyaltyReceiver(newRoyaltyReceiver);
+    function setRoyaltyReceiver(address newReceiver) public onlyOwner {
+        if (newReceiver == address(0)) revert ZeroAddress();
+        if (newReceiver == _royaltyReceiver) revert SameRoyaltyReceiver();
+        
+        address oldReceiver = _royaltyReceiver;
+        _royaltyReceiver = newReceiver;
+        emit RoyaltyReceiverUpdated(oldReceiver, newReceiver);
     }
 
     function getRoyaltyReceiver() public view returns (address) {
@@ -169,7 +208,6 @@ contract VariousPicturesCollection is ERC721, IERC2981, Ownable, ReentrancyGuard
     /**
      * @dev first parameter in royaltyInfo is tokenId - the NFT asset queried for royalty information
      * @param salePrice - the sale price of the NFT asset specified by tokenId
-     * @notice `_royaltyReceiver, salePrice / 20` is optimized code of `_royaltyReceiver (salePrice * 500) / 10000)` for 5% royalty
      */
     function royaltyInfo(uint256, uint256 salePrice)
         external
@@ -177,7 +215,7 @@ contract VariousPicturesCollection is ERC721, IERC2981, Ownable, ReentrancyGuard
         override
         returns (address receiver, uint256 royaltyAmount)
     {
-        return (_royaltyReceiver, salePrice / 20);
+        return (_royaltyReceiver, (salePrice * _royaltyBasisPoints) / 10000);
     }
 
     /// @dev EIP2981 standard Interface return. Adds to ERC721 and ERC165 Interface returns.
@@ -192,18 +230,37 @@ contract VariousPicturesCollection is ERC721, IERC2981, Ownable, ReentrancyGuard
             super.supportsInterface(interfaceId));
     }
 
+    /**
+     * @dev Updates the royalty percentage in basis points
+     * @param newBasisPoints The new royalty percentage in basis points (e.g., 500 = 5%).
+     */
+    function updateRoyaltyBasisPoints(uint256 newBasisPoints) external onlyOwner {
+        if (newBasisPoints > MAX_ROYALTY_BASIS_POINTS) revert RoyaltyTooHigh();
+        if (newBasisPoints == _royaltyBasisPoints) revert SameRoyaltyBasisPoints();
+        
+        uint256 oldRoyaltyBasisPoints = _royaltyBasisPoints;
+        _royaltyBasisPoints = newBasisPoints;
+        emit RoyaltyUpdated(oldRoyaltyBasisPoints, newBasisPoints);
+    }
+
 
 
     /** METADATA **/
+
+    string private _contractMetadataURI;
+
     /**
      * @dev Updates the contract metadata URI.
      * @param newURI The new metadata URI to set.
      * @notice If the _royaltyReceiver is changed in the new URI it should be updated manually by the owner or maintainer in the contract as well, by setRoyaltyReceiver function.
      * Marketplaces may use own internal setup which should be aligned with the will of the owner or maintainer of the contract
      */
-    function updateContractMetadataURI(string memory newURI) external onlyOwner {
+    function updateContractMetadataURI(string memory newURI) public onlyOwner {
         if (bytes(newURI).length == 0) revert EmptyURI();
+        
+        string memory oldURI = _contractMetadataURI;
         _contractMetadataURI = newURI;
+        emit MetadataURIUpdated(oldURI, newURI);
     }
 
     function contractURI() public view returns (string memory) {
@@ -260,5 +317,21 @@ contract VariousPicturesCollection is ERC721, IERC2981, Ownable, ReentrancyGuard
         );
     }
 
-    using Address for address payable;
+    uint256 private constant MAX_NAME_LENGTH = 256;
+    uint256 private constant MAX_DESCRIPTION_LENGTH = 4096;
+    uint256 private constant MAX_IMAGE_URI_LENGTH = 512;
+
+    /**
+     * @dev Validates the metadata for a new NFT.
+     * @param name The name of the NFT.
+     * @param description The description of the NFT.
+     * @param imageURI The URI of the NFT's image.
+     */
+    function _validateMetadata(string memory name, string memory description, string memory imageURI) internal pure {
+        if (bytes(name).length == 0) revert EmptyName();
+        if (bytes(imageURI).length == 0) revert EmptyImage();
+        if (bytes(name).length > MAX_NAME_LENGTH) revert NameTooLong();
+        if (bytes(description).length > MAX_DESCRIPTION_LENGTH) revert DescriptionTooLong();
+        if (bytes(imageURI).length > MAX_IMAGE_URI_LENGTH) revert ImageURITooLong();
+    }
 }

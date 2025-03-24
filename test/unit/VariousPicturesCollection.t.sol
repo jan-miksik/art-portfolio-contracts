@@ -6,8 +6,8 @@ import {VariousPicturesCollection} from "../../src/VariousPicturesCollection.sol
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {Base64} from "@openzeppelin/contracts/utils/Base64.sol";
 
-// Add the error declaration
-error EmptyTokenURI();
+
+error OwnableUnauthorizedAccount(address account);
 
 contract MockERC20 is IERC20 {
     mapping(address => uint256) private _balances;
@@ -43,6 +43,7 @@ contract VariousPicturesCollectionTest is Test {
     string constant COLLECTION_NAME = "Various Pictures";
     string constant COLLECTION_SYMBOL = "VP";
     string constant COLLECTION_URI = "https://arweave.net/metadata";
+    uint256 constant COLLECTION_ROYALTY_BASIS_POINTS = 500; // 5%
     string constant TEST_NAME = "Test NFT";
     string constant TEST_DESCRIPTION = "Test Description";
     string constant TEST_IMAGE = "ipfs://image";
@@ -55,12 +56,13 @@ contract VariousPicturesCollectionTest is Test {
         collection = new VariousPicturesCollection(
             COLLECTION_NAME,
             COLLECTION_SYMBOL,
-            COLLECTION_URI
+            COLLECTION_URI,
+            COLLECTION_ROYALTY_BASIS_POINTS
         );
         mockToken = new MockERC20();
     }
 
-    function testOwnerIsMessageSender() public {
+    function testOwnerIsMessageSender() public view {
         assertEq(collection.owner(), owner);
     }
 
@@ -151,24 +153,27 @@ contract VariousPicturesCollectionTest is Test {
 
     /** Test error conditions **/
 
-    function testFail_safeMintWithMetadata_EmptyName() public {
+    function test_Revert_MintWithMetadata_EmptyName() public {
         vm.prank(owner);
+        vm.expectRevert(abi.encodeWithSignature("EmptyName()"));
         collection.safeMintWithMetadata(
             "",
             TEST_IMAGE
         );
     }
 
-    function testFail_safeMintWithMetadata_EmptyImage() public {
+    function test_Revert_MintWithMetadata_EmptyImage() public {
         vm.prank(owner);
+        vm.expectRevert(abi.encodeWithSignature("EmptyImage()"));
         collection.safeMintWithMetadata(
             TEST_NAME,
             ""
         );
     }
 
-    function testFail_safeMintWithMetadata_ZeroAddress() public {
+    function test_Revert_MintWithMetadata_ZeroAddress() public {
         vm.prank(owner);
+        vm.expectRevert(abi.encodeWithSignature("ZeroAddress()"));
         collection.safeMintWithMetadata(
             address(0),
             TEST_NAME,
@@ -186,6 +191,47 @@ contract VariousPicturesCollectionTest is Test {
         vm.prank(owner);
         vm.expectRevert(abi.encodeWithSignature("ZeroAddress()"));
         collection.safeMintWithURI(address(0), "test");
+    }
+
+    /** Test validation of metadata **/
+
+    function test_Revert_MetadataValidation_NameTooLong() public {
+        string memory longName = new string(257);
+        for(uint i = 0; i < 257; i++) {
+            assembly {
+                mstore8(add(add(longName, 32), i), 0x61) // ASCII 'a'
+            }
+        }
+        
+        vm.prank(owner);
+        vm.expectRevert(abi.encodeWithSignature("NameTooLong()"));
+        collection.safeMintWithMetadata(user, longName, TEST_DESCRIPTION, TEST_IMAGE);
+    }
+
+    function test_Revert_MetadataValidation_DescriptionTooLong() public {
+        string memory longDescription = new string(4097);
+        for(uint i = 0; i < 4097; i++) {
+            assembly {
+                mstore8(add(add(longDescription, 32), i), 0x61) // ASCII 'a'
+            }
+        }
+        
+        vm.prank(owner);
+        vm.expectRevert(abi.encodeWithSignature("DescriptionTooLong()"));
+        collection.safeMintWithMetadata(user, TEST_NAME, longDescription, TEST_IMAGE);
+    }
+
+    function test_Revert_MetadataValidation_ImageURITooLong() public {
+        string memory longImageURI = new string(513);
+        for(uint i = 0; i < 513; i++) {
+            assembly {
+                mstore8(add(add(longImageURI, 32), i), 0x61) // ASCII 'a'
+            }
+        }
+        
+        vm.prank(owner);
+        vm.expectRevert(abi.encodeWithSignature("ImageURITooLong()"));
+        collection.safeMintWithMetadata(user, TEST_NAME, TEST_DESCRIPTION, longImageURI);
     }
 
 
@@ -238,7 +284,8 @@ contract VariousPicturesCollectionTest is Test {
 
     /** ROYALTIES **/
 
-    function testRoyaltyInfo() public {
+    /// @dev test royaltyInfo function
+    function testRoyaltyInfo() public view {
         (address receiver, uint256 royaltyAmount) = collection.royaltyInfo(0, 100);
         assertEq(receiver, collection.getRoyaltyReceiver());
         assertEq(royaltyAmount, 5); // 5% of 100
@@ -263,11 +310,46 @@ contract VariousPicturesCollectionTest is Test {
         collection.setRoyaltyReceiver(currentReceiver);
     }
 
+    /// @dev test updateRoyaltyBasisPoints function
+    function testUpdateRoyaltyBasisPoints() public {
+        uint256 newRoyaltyBasisPoints = 1000; // 10%
+        
+        vm.prank(owner);
+        collection.updateRoyaltyBasisPoints(newRoyaltyBasisPoints);
+        
+        (,uint256 royaltyAmount) = collection.royaltyInfo(0, 100);
+        assertEq(royaltyAmount, 10); // 10% of 100
+    }
+
+    function test_Revert_UpdateRoyaltyBasisPointsTooHigh() public {
+        uint256 tooHighRoyalty = 10001; // Max is 10000 (100%)
+        
+        vm.prank(owner);
+        vm.expectRevert(abi.encodeWithSignature("RoyaltyTooHigh()"));
+        collection.updateRoyaltyBasisPoints(tooHighRoyalty);
+    }
+
+    function test_Revert_UpdateRoyaltyBasisPointsSameValue() public {
+        uint256 currentRoyalty = COLLECTION_ROYALTY_BASIS_POINTS; // 500 (5%)
+        
+        vm.prank(owner);
+        vm.expectRevert(abi.encodeWithSignature("SameRoyaltyBasisPoints()"));
+        collection.updateRoyaltyBasisPoints(currentRoyalty);
+    }
+
+    function test_Revert_UpdateRoyaltyBasisPointsNotOwner() public {
+        vm.prank(user);
+        vm.expectRevert(abi.encodeWithSelector(OwnableUnauthorizedAccount.selector, user));
+        collection.updateRoyaltyBasisPoints(1000);
+    }
+
+    
+
     
 
     /** METADATA **/
 
-    function testInitialContractURI() public {
+    function testInitialContractURI() public view {
         assertEq(collection.contractURI(), COLLECTION_URI);
     }
 
@@ -286,13 +368,13 @@ contract VariousPicturesCollectionTest is Test {
         collection.updateContractMetadataURI("");
     }
 
-    // function test_Revert_UpdateContractMetadataURINotOwner() public {
-    //     vm.prank(user);
-    //     vm.expectRevert("Ownable: caller is not the owner");
-    //     collection.updateContractMetadataURI("https://arweave.net/newmetadata");
-    // }
+    function test_Revert_UpdateContractMetadataURINotOwner() public {
+        vm.prank(user);
+        vm.expectRevert(abi.encodeWithSelector(OwnableUnauthorizedAccount.selector, user));
+        collection.updateContractMetadataURI("https://arweave.net/newmetadata");
+    }
 
-    function testConstructorParameters() public {
+    function testConstructorParameters() public view {
         assertEq(collection.name(), COLLECTION_NAME);
         assertEq(collection.symbol(), COLLECTION_SYMBOL);
         assertEq(collection.contractURI(), COLLECTION_URI);
@@ -304,7 +386,8 @@ contract VariousPicturesCollectionTest is Test {
         new VariousPicturesCollection(
             COLLECTION_NAME,
             COLLECTION_SYMBOL,
-            ""
+            "",
+            COLLECTION_ROYALTY_BASIS_POINTS
         );
     }
 
