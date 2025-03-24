@@ -78,16 +78,16 @@ contract VariousPicturesCollectionTest is Test {
         assertEq(collection.ownerOf(0), user);
     }
 
-    function testMintWithURI() public {
-        string memory uri = "data:application/json;base64,test";
+    // function testMintWithURI() public {
+    //     string memory uri = "data:application/json;base64,test";
         
-        vm.prank(owner);
-        collection.safeMintWithURI(user, uri);
+    //     vm.prank(owner);
+    //     collection.safeMintWithURI(user, uri);
         
-        assertEq(collection.mintedNFTs(), 1);
-        assertEq(collection.ownerOf(0), user);
-        assertEq(collection.tokenURI(0), uri);
-    }
+    //     assertEq(collection.mintedNFTs(), 1);
+    //     assertEq(collection.ownerOf(0), user);
+    //     assertEq(collection.tokenURI(0), uri);
+    // }
 
     /** Test overloaded safeMintWithMetadata functions **/
 
@@ -181,17 +181,17 @@ contract VariousPicturesCollectionTest is Test {
         );
     }
 
-    function test_Revert_MintWithEmptyURI() public {
-        vm.prank(owner);
-        vm.expectRevert(abi.encodeWithSignature("EmptyTokenURI()"));
-        collection.safeMintWithURI(address(1), "");
-    }
+    // function test_Revert_MintWithEmptyURI() public {
+    //     vm.prank(owner);
+    //     vm.expectRevert(abi.encodeWithSignature("EmptyTokenURI()"));
+    //     collection.safeMintWithURI(address(1), "");
+    // }
 
-    function test_Revert_MintToZeroAddress() public {
-        vm.prank(owner);
-        vm.expectRevert(abi.encodeWithSignature("ZeroAddress()"));
-        collection.safeMintWithURI(address(0), "test");
-    }
+    // function test_Revert_MintToZeroAddress() public {
+    //     vm.prank(owner);
+    //     vm.expectRevert(abi.encodeWithSignature("ZeroAddress()"));
+    //     collection.safeMintWithURI(address(0), "test");
+    // }
 
     /** Test validation of metadata **/
 

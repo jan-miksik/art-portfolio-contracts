@@ -18,18 +18,18 @@ error NoEtherToWithdraw();
 error NoTokensToWithdraw();
 error TokenTransferFailed();
 error SameRoyaltyReceiver();
-error EmptyName();
-error EmptyImage();
+// error EmptyName();
+// error EmptyImage();
 error EmptyMetadata();
 error EmptyURI();
 error RoyaltyTooHigh();
 error SameRoyaltyBasisPoints();
-error NameTooLong();
-error DescriptionTooLong();
-error ImageURITooLong();
+// error NameTooLong();
+// error DescriptionTooLong();
+// error ImageURITooLong();
 
 contract VariousPicturesCollection is ERC721, IERC2981, Ownable, ERC721Burnable, ReentrancyGuard {
-    event NFTMinted(address indexed to, uint256 indexed tokenId, string name, string image);
+    event NFTMinted(address indexed to, string tokenURImetadata);
     event RoyaltyUpdated(uint256 oldRoyaltyBasisPoints, uint256 newRoyaltyBasisPoints);
     event RoyaltyReceiverUpdated(address indexed previousReceiver, address indexed newReceiver);
     event MetadataURIUpdated(string previousURI, string newURI);
@@ -59,73 +59,73 @@ contract VariousPicturesCollection is ERC721, IERC2981, Ownable, ERC721Burnable,
         return _nftCounter;
     }
 
-    /**
-     * @dev Mints a new NFT to the contract owner
-     * @param name The name of the NFT
-     * @param image The URI pointing to the NFT's image
-     * @notice safeMintWithMetadata using overloading to make some of the parameters optional
-     */
-    function safeMintWithMetadata(
-        string memory name,
-        string memory image
-    ) public onlyOwner {
-        safeMintWithMetadata(owner(), name, "", image);
-    }
+    // /**
+    //  * @dev Mints a new NFT to the contract owner
+    //  * @param name The name of the NFT
+    //  * @param image The URI pointing to the NFT's image
+    //  * @notice safeMintWithMetadata using overloading to make some of the parameters optional
+    //  */
+    // function safeMintWithMetadata(
+    //     string memory name,
+    //     string memory image
+    // ) public onlyOwner {
+    //     safeMintWithMetadata(owner(), name, "", image);
+    // }
 
-    /**
-     * @dev Mints a new NFT with specified metadata
-     * @param to The address that will receive the minted NFT (optional, defaults to contract owner)
-     * @param name The name of the NFT
-     * @param image The URI pointing to the NFT's image
-     */
-    function safeMintWithMetadata(
-        address to,
-        string memory name,
-        string memory image
-    ) public onlyOwner {
-        safeMintWithMetadata(to, name, "", image);
-    }
+    // /**
+    //  * @dev Mints a new NFT with specified metadata
+    //  * @param to The address that will receive the minted NFT (optional, defaults to contract owner)
+    //  * @param name The name of the NFT
+    //  * @param image The URI pointing to the NFT's image
+    //  */
+    // function safeMintWithMetadata(
+    //     address to,
+    //     string memory name,
+    //     string memory image
+    // ) public onlyOwner {
+    //     safeMintWithMetadata(to, name, "", image);
+    // }
 
-    /**
-     * @dev Mints a new NFT with specified metadata to the owner
-     * @param name The name of the NFT
-     * @param description A detailed description of the NFT (optional)
-     * @param image The URI pointing to the NFT's image
-     */
-    function safeMintWithMetadata(
-        string memory name,
-        string memory description,
-        string memory image
-    ) public onlyOwner {
-        safeMintWithMetadata(owner(), name, description, image);
-    }
+    // /**
+    //  * @dev Mints a new NFT with specified metadata to the owner
+    //  * @param name The name of the NFT
+    //  * @param description A detailed description of the NFT (optional)
+    //  * @param image The URI pointing to the NFT's image
+    //  */
+    // function safeMintWithMetadata(
+    //     string memory name,
+    //     string memory description,
+    //     string memory image
+    // ) public onlyOwner {
+    //     safeMintWithMetadata(owner(), name, description, image);
+    // }
 
-    /**
-     * @dev Mints a new NFT with specified metadata components
-     * @param to The address that will receive the minted NFT (optional, defaults to contract owner)
-     * @param name The name of the NFT
-     * @param description A detailed description of the NFT (optional)
-     * @param image The URI pointing to the NFT's image
-     */
-    function safeMintWithMetadata(
-        address to,
-        string memory name,
-        string memory description,
-        string memory image
-    ) public onlyOwner {
-        if (to == address(0)) revert ZeroAddress();
-        _validateMetadata(name, description, image);
+    // /**
+    //  * @dev Mints a new NFT with specified metadata components
+    //  * @param to The address that will receive the minted NFT (optional, defaults to contract owner)
+    //  * @param name The name of the NFT
+    //  * @param description A detailed description of the NFT (optional)
+    //  * @param image The URI pointing to the NFT's image
+    //  */
+    // function safeMintWithMetadata(
+    //     address to,
+    //     string memory name,
+    //     string memory description,
+    //     string memory image
+    // ) public onlyOwner {
+    //     if (to == address(0)) revert ZeroAddress();
+    //     _validateMetadata(name, description, image);
         
-        uint256 tokenId;
-        unchecked {
-            tokenId = _nftCounter++;
-        }
+    //     uint256 tokenId;
+    //     unchecked {
+    //         tokenId = _nftCounter++;
+    //     }
         
-        _safeMint(to, tokenId);
-        _setTokenURI(tokenId, createTokenURI(name, description, image));
+    //     _safeMint(to, tokenId);
+    //     _setTokenURI(tokenId, createTokenURI(name, description, image));
         
-        emit NFTMinted(to, tokenId, name, image);
-    }
+    //     emit NFTMinted(to, tokenId, name, image);
+    // }
 
     /**
      * @dev Mints a new NFT with a complete tokenURI
@@ -140,6 +140,8 @@ contract VariousPicturesCollection is ERC721, IERC2981, Ownable, ERC721Burnable,
         _safeMint(to, tokenId);
         _setTokenURI(tokenId, tokenURImetadata);
         _nftCounter++;
+
+        emit NFTMinted(to, tokenURImetadata);
     }
 
 
@@ -182,15 +184,6 @@ contract VariousPicturesCollection is ERC721, IERC2981, Ownable, ERC721Burnable,
     address private _royaltyReceiver;
     uint256 private _royaltyBasisPoints;
     uint256 private constant MAX_ROYALTY_BASIS_POINTS = 10000;
-
-    function _setRoyaltyReceiver(address newRoyaltyReceiver)
-        internal
-        onlyOwner
-    {
-        if (newRoyaltyReceiver == _royaltyReceiver) revert SameRoyaltyReceiver();
-        if (newRoyaltyReceiver == address(0)) revert ZeroAddress();
-        _royaltyReceiver = newRoyaltyReceiver;
-    }
 
     function setRoyaltyReceiver(address newReceiver) public onlyOwner {
         if (newReceiver == address(0)) revert ZeroAddress();
@@ -270,7 +263,6 @@ contract VariousPicturesCollection is ERC721, IERC2981, Ownable, ERC721Burnable,
     mapping(uint256 => string) private _tokenURIs;
 
     function _setTokenURI(uint256 tokenId, string memory tokenURImetadata) internal {
-        if (_ownerOf(tokenId) == address(0)) revert NonexistentToken();
         _tokenURIs[tokenId] = tokenURImetadata;
     }
 
@@ -287,7 +279,7 @@ contract VariousPicturesCollection is ERC721, IERC2981, Ownable, ERC721Burnable,
         return tokenURImetadata;
     }
 
-    /// @dev Helper function to create TokenURI from metadata components
+    // / @dev Helper function to create TokenURI from metadata components
     function createTokenURI(
         string memory name,
         string memory description,
@@ -296,42 +288,33 @@ contract VariousPicturesCollection is ERC721, IERC2981, Ownable, ERC721Burnable,
         if (bytes(name).length == 0) revert EmptyName();
         if (bytes(image).length == 0) revert EmptyImage();
 
-        bytes memory dataURI = abi.encodePacked(
-            '{',
-            '"name": "',
-            name,
-            '",',
-            '"description": "',
-            description,
-            '",',
-            '"image": "',
-            image,
-            '"',
-            '}'
-        );
-        return string(
-            abi.encodePacked(
-                'data:application/json;base64,',
-                Base64.encode(dataURI)
+        return string.concat(
+            'data:application/json;base64,',
+            Base64.encode(
+                abi.encodePacked(
+                    '{"name":"', name, 
+                    '","description":"', description, 
+                    '","image":"', image, '"}'
+                )
             )
         );
     }
 
-    uint256 private constant MAX_NAME_LENGTH = 256;
-    uint256 private constant MAX_DESCRIPTION_LENGTH = 4096;
-    uint256 private constant MAX_IMAGE_URI_LENGTH = 512;
+    // uint256 private immutable MAX_NAME_LENGTH = 256;
+    // uint256 private immutable MAX_DESCRIPTION_LENGTH = 4096;
+    // uint256 private immutable MAX_IMAGE_URI_LENGTH = 512;
 
-    /**
-     * @dev Validates the metadata for a new NFT.
-     * @param name The name of the NFT.
-     * @param description The description of the NFT.
-     * @param imageURI The URI of the NFT's image.
-     */
-    function _validateMetadata(string memory name, string memory description, string memory imageURI) internal pure {
-        if (bytes(name).length == 0) revert EmptyName();
-        if (bytes(imageURI).length == 0) revert EmptyImage();
-        if (bytes(name).length > MAX_NAME_LENGTH) revert NameTooLong();
-        if (bytes(description).length > MAX_DESCRIPTION_LENGTH) revert DescriptionTooLong();
-        if (bytes(imageURI).length > MAX_IMAGE_URI_LENGTH) revert ImageURITooLong();
-    }
+    // /**
+    //  * @dev Validates the metadata for a new NFT.
+    //  * @param name The name of the NFT.
+    //  * @param description The description of the NFT.
+    //  * @param imageURI The URI of the NFT's image.
+    //  */
+    // function _validateMetadata(string memory name, string memory description, string memory imageURI) internal pure {
+    //     if (bytes(name).length == 0) revert EmptyName();
+    //     if (bytes(imageURI).length == 0) revert EmptyImage();
+    //     if (bytes(name).length > MAX_NAME_LENGTH) revert NameTooLong();
+    //     if (bytes(description).length > MAX_DESCRIPTION_LENGTH) revert DescriptionTooLong();
+    //     if (bytes(imageURI).length > MAX_IMAGE_URI_LENGTH) revert ImageURITooLong();
+    // }
 }
