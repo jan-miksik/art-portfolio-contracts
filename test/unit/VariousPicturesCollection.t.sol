@@ -280,6 +280,23 @@ contract VariousPicturesCollectionTest is Test {
         assertEq(collection.checkERC20Balance(IERC20(address(mockToken))), 100);
     }
 
+    function test_WithdrawERC20TokenWithZeroBalance() public {
+        // Deploy mock ERC20 token
+        MockERC20 token = new MockERC20();
+        
+        // Try to withdraw with zero balance
+        vm.prank(owner);
+        vm.expectRevert(abi.encodeWithSignature("NoTokensToWithdraw()"));  // Use abi.encodeWithSignature
+        collection.withdrawERC20Token(IERC20(address(token)), user);  // Use the new token, not mockToken
+    }
+
+    function test_WithdrawERC20TokenWithInvalidToken() public {
+        // Try to withdraw with invalid token address
+        vm.prank(owner);
+        vm.expectRevert();
+        collection.withdrawERC20Token(IERC20(address(0)), user);
+    }
+
 
 
     /** ROYALTIES **/
@@ -390,6 +407,24 @@ contract VariousPicturesCollectionTest is Test {
             COLLECTION_ROYALTY_BASIS_POINTS
         );
     }
+
+    function test_SupportsInterface() public view {
+        // Test ERC165 interface
+        assertTrue(collection.supportsInterface(0x01ffc9a7), "Should support ERC165");
+        
+        // Test ERC721 interface
+        assertTrue(collection.supportsInterface(0x80ac58cd), "Should support ERC721");
+        
+        // Test ERC721Metadata interface
+        assertTrue(collection.supportsInterface(0x5b5e139f), "Should support ERC721Metadata");
+        
+        // Test ERC2981 interface
+        assertTrue(collection.supportsInterface(0x2a55205a), "Should support ERC2981");
+        
+        // Test invalid interface
+        assertFalse(collection.supportsInterface(0xffffffff), "Should not support invalid interface");
+    }
+
 
     receive() external payable {} // Allow contract to receive ETH
 
