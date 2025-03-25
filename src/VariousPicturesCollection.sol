@@ -68,24 +68,8 @@ contract VariousPicturesCollection is ERC721, IERC2981, Ownable, ERC721Burnable,
         safeMintWithMetadata(owner(), name, "", image);
     }
 
-    function safeMintWithMetadata(
-        address to,
-        string memory name,
-        string memory image
-    ) public onlyOwner {
-        safeMintWithMetadata(to, name, "", image);
-    }
-
-    function safeMintWithMetadata(
-        string memory name,
-        string memory description,
-        string memory image
-    ) public onlyOwner {
-        safeMintWithMetadata(owner(), name, description, image);
-    }
-
     /**
-     * @dev Mints a new NFT, using overloaded functions to make some of the parameters optional
+     * @dev Mints a new NFT
      * @param to The address that will receive the minted NFT (optional, defaults to contract owner)
      * @param name The name of the NFT
      * @param description A detailed description of the NFT (optional, defaults to empty string)

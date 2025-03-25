@@ -67,6 +67,45 @@ contract VariousPicturesCollectionTest is Test {
     }
 
 
+    function testMockERC20Functions() public view {
+        // Test all the uncovered functions in MockERC20
+        
+        // Test allowance
+        uint256 allowanceAmount = mockToken.allowance(address(1), address(2));
+        assertEq(allowanceAmount, 0);
+        
+        // Test approve
+        bool approveResult = mockToken.approve(address(1), 100);
+        assertEq(approveResult, false);
+        
+        // Test transferFrom
+        bool transferFromResult = mockToken.transferFrom(address(1), address(2), 100);
+        assertEq(transferFromResult, false);
+        
+        // Test totalSupply
+        uint256 totalSupply = mockToken.totalSupply();
+        assertEq(totalSupply, 0);
+    }
+
+
+    function test_SupportsInterface() public view {
+        // Test ERC165 interface
+        assertTrue(collection.supportsInterface(0x01ffc9a7), "Should support ERC165");
+        
+        // Test ERC721 interface
+        assertTrue(collection.supportsInterface(0x80ac58cd), "Should support ERC721");
+        
+        // Test ERC721Metadata interface
+        assertTrue(collection.supportsInterface(0x5b5e139f), "Should support ERC721Metadata");
+        
+        // Test ERC2981 interface
+        assertTrue(collection.supportsInterface(0x2a55205a), "Should support ERC2981");
+        
+        // Test invalid interface
+        assertFalse(collection.supportsInterface(0xffffffff), "Should not support invalid interface");
+    }
+
+
 
     /** MINTING **/
 
@@ -105,36 +144,6 @@ contract VariousPicturesCollectionTest is Test {
         assertEq(collection.tokenURI(0), expectedUri);
     }
 
-    function test_safeMintWithMetadata_ToAddressNameAndImage() public {
-        vm.prank(owner);
-        collection.safeMintWithMetadata(
-            user,
-            TEST_NAME,
-            TEST_IMAGE
-        );
-
-        assertEq(collection.mintedNFTs(), 1);
-        assertEq(collection.ownerOf(0), user);
-        
-        string memory expectedUri = collection.createTokenURI(TEST_NAME, "", TEST_IMAGE);
-        assertEq(collection.tokenURI(0), expectedUri);
-    }
-
-    function test_safeMintWithMetadata_NameDescriptionAndImage() public {
-        vm.prank(owner);
-        collection.safeMintWithMetadata(
-            TEST_NAME,
-            TEST_DESCRIPTION,
-            TEST_IMAGE
-        );
-
-        assertEq(collection.mintedNFTs(), 1);
-        assertEq(collection.ownerOf(0), owner);
-        
-        string memory expectedUri = collection.createTokenURI(TEST_NAME, TEST_DESCRIPTION, TEST_IMAGE);
-        assertEq(collection.tokenURI(0), expectedUri);
-    }
-
     function test_safeMintWithMetadata_ToAddressNameDescriptionAndImage() public {
         vm.prank(owner);
         collection.safeMintWithMetadata(
@@ -168,16 +177,6 @@ contract VariousPicturesCollectionTest is Test {
         collection.safeMintWithMetadata(
             TEST_NAME,
             ""
-        );
-    }
-
-    function test_Revert_MintWithMetadata_ZeroAddress() public {
-        vm.prank(owner);
-        vm.expectRevert(abi.encodeWithSignature("ZeroAddress()"));
-        collection.safeMintWithMetadata(
-            address(0),
-            TEST_NAME,
-            TEST_IMAGE
         );
     }
 
@@ -234,6 +233,16 @@ contract VariousPicturesCollectionTest is Test {
         collection.safeMintWithMetadata(user, TEST_NAME, TEST_DESCRIPTION, longImageURI);
     }
 
+    function test_Revert_MintWithMetadata_ToZeroAddress() public {
+        vm.prank(owner);
+        vm.expectRevert(abi.encodeWithSignature("ZeroAddress()"));
+        collection.safeMintWithMetadata(
+            address(0),
+            TEST_NAME,
+            TEST_DESCRIPTION,
+            TEST_IMAGE
+        );
+    }
 
 
     /** PAYOUT **/
@@ -295,6 +304,15 @@ contract VariousPicturesCollectionTest is Test {
         vm.prank(owner);
         vm.expectRevert();
         collection.withdrawERC20Token(IERC20(address(0)), user);
+    }
+
+    function test_Revert_WithdrawERC20TokenToZeroAddress() public {
+        // Fund the contract with ERC20 tokens
+        mockToken.mint(address(collection), 100);
+        
+        vm.prank(owner);
+        vm.expectRevert(abi.encodeWithSignature("ZeroAddress()"));
+        collection.withdrawERC20Token(IERC20(address(mockToken)), address(0));
     }
 
 
@@ -408,23 +426,10 @@ contract VariousPicturesCollectionTest is Test {
         );
     }
 
-    function test_SupportsInterface() public view {
-        // Test ERC165 interface
-        assertTrue(collection.supportsInterface(0x01ffc9a7), "Should support ERC165");
-        
-        // Test ERC721 interface
-        assertTrue(collection.supportsInterface(0x80ac58cd), "Should support ERC721");
-        
-        // Test ERC721Metadata interface
-        assertTrue(collection.supportsInterface(0x5b5e139f), "Should support ERC721Metadata");
-        
-        // Test ERC2981 interface
-        assertTrue(collection.supportsInterface(0x2a55205a), "Should support ERC2981");
-        
-        // Test invalid interface
-        assertFalse(collection.supportsInterface(0xffffffff), "Should not support invalid interface");
+    function test_Revert_TokenURINonexistentToken() public {
+        vm.expectRevert(abi.encodeWithSignature("NonexistentToken()"));
+        collection.tokenURI(999); // Token ID that doesn't exist
     }
-
 
     receive() external payable {} // Allow contract to receive ETH
 
