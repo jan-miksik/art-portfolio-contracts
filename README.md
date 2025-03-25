@@ -1,66 +1,16 @@
-## Foundry
+## About
 
-**Foundry is a blazing fast, portable and modular toolkit for Ethereum application development written in Rust.**
+The contract is meant for own art creation and publishing NFTs, because of that some parts of the contract may do centralised impression. The contract should allow gradual minting of NFTs, which will have stored metadata on-chain. That makes the minting process itself easier and ensure higher immutability of NFT metadata.
 
-Foundry consists of:
+The general idea is once the image for the NFT is created, the owner mint the NFT and then list it on marketplace, add to auction or anything else
 
--   **Forge**: Ethereum testing framework (like Truffle, Hardhat and DappTools).
--   **Cast**: Swiss army knife for interacting with EVM smart contracts, sending transactions and getting chain data.
--   **Anvil**: Local Ethereum node, akin to Ganache, Hardhat Network.
--   **Chisel**: Fast, utilitarian, and verbose solidity REPL.
+The contract doesn’t limit NFT amounts. This collection should releasing slowly NFTs during time without any specific vision about final amount
 
-## Documentation
+## what to do
+1. setup env variables - rename .env.exmaple -> .env (the actuall env should always stay on local machine)
+2. `$ make all` should install and prepeare all the stuff, details are in Makefile
+3. `$ make deploy-sepolia` deploy contract to Sepolia
 
-https://book.getfoundry.sh/
-
-## Usage
-
-### Build
-
-```shell
-$ forge build
-```
-
-### Test
-
-```shell
-$ forge test
-```
-
-### Format
-
-```shell
-$ forge fmt
-```
-
-### Gas Snapshots
-
-```shell
-$ forge snapshot
-```
-
-### Anvil
-
-```shell
-$ anvil
-```
-
-### Deploy
-
-```shell
-$ forge script script/Counter.s.sol:CounterScript --rpc-url <your_rpc_url> --private-key <your_private_key>
-```
-
-### Cast
-
-```shell
-$ cast <subcommand>
-```
-
-### Help
-
-```shell
-$ forge --help
-$ anvil --help
-$ cast --help
-```
+## Thanks to tools and courses
+- foundry https://book.getfoundry.sh/
+- cyfrin https://updraft.cyfrin.io/courses

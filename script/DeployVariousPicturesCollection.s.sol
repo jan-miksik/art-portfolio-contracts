@@ -1,29 +1,31 @@
 // SPDX-License-Identifier: MIT
-// create a script to deploy the VariousPicturesCollection contract
 
-pragma solidity ^0.8.13;
+pragma solidity ^0.8.20;
 
-import {Script, console} from "forge-std/Script.sol";
-import "../src/VariousPicturesCollection.sol";  // Adjust this path as needed
+import {Script} from "forge-std/Script.sol";
+import {VariousPicturesCollection} from "../src/VariousPicturesCollection.sol";
 
 contract DeployVariousPicturesCollection is Script {
-    string constant COLLECTION_NAME = "Various Pictures";
-    string constant COLLECTION_SYMBOL = "VP";
-    string constant COLLECTION_URI = "https://arweave.net/ynfQYkcpgR3pMc6H16nLh0S_7WDIlkSMAP4OXzEDz4g";
-    uint256 constant INITIAL_ROYALTY_BASIS_POINTS = 500; // 5%
+    function run() public returns (VariousPicturesCollection) {
+        // Read environment variables using vm.envUint/vm.envString
+        uint256 initialRoyaltyBasisPoints = vm.envUint("INITIAL_ROYALTY_BASIS_POINTS");
+        string memory name = vm.envString("COLLECTION_NAME");
+        string memory symbol = vm.envString("COLLECTION_SYMBOL");
+        string memory contractMetadataURI = vm.envString("CONTRACT_METADATA_URI");
 
-    function run() external returns (VariousPicturesCollection) {
+        // Start broadcasting transactions
         vm.startBroadcast();
 
+        // Deploy the contract
         VariousPicturesCollection collection = new VariousPicturesCollection(
-            COLLECTION_NAME,
-            COLLECTION_SYMBOL,
-            COLLECTION_URI,
-            INITIAL_ROYALTY_BASIS_POINTS
+            name,
+            symbol,
+            contractMetadataURI,
+            initialRoyaltyBasisPoints
         );
 
         vm.stopBroadcast();
-
+        
         return collection;
     }
 }

@@ -10,6 +10,7 @@ import '@openzeppelin/contracts/token/ERC721/ERC721.sol';
 import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import '@openzeppelin/contracts/utils/Address.sol';
 import '@openzeppelin/contracts/token/ERC721/extensions/ERC721Burnable.sol';
+import '@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol';
 
 error EmptyTokenURI();
 error ZeroAddress();
@@ -60,12 +61,6 @@ contract VariousPicturesCollection is ERC721, IERC2981, Ownable, ERC721Burnable,
         return _nftCounter;
     }
 
-    /**
-     * @dev Mints a new NFT to the contract owner
-     * @param name The name of the NFT
-     * @param image The URI pointing to the NFT's image
-     * @notice safeMintWithMetadata using overloading to make some of the parameters optional
-     */
     function safeMintWithMetadata(
         string memory name,
         string memory image
@@ -73,12 +68,6 @@ contract VariousPicturesCollection is ERC721, IERC2981, Ownable, ERC721Burnable,
         safeMintWithMetadata(owner(), name, "", image);
     }
 
-    /**
-     * @dev Mints a new NFT with specified metadata
-     * @param to The address that will receive the minted NFT (optional, defaults to contract owner)
-     * @param name The name of the NFT
-     * @param image The URI pointing to the NFT's image
-     */
     function safeMintWithMetadata(
         address to,
         string memory name,
@@ -87,12 +76,6 @@ contract VariousPicturesCollection is ERC721, IERC2981, Ownable, ERC721Burnable,
         safeMintWithMetadata(to, name, "", image);
     }
 
-    /**
-     * @dev Mints a new NFT with specified metadata to the owner
-     * @param name The name of the NFT
-     * @param description A detailed description of the NFT (optional)
-     * @param image The URI pointing to the NFT's image
-     */
     function safeMintWithMetadata(
         string memory name,
         string memory description,
@@ -102,10 +85,10 @@ contract VariousPicturesCollection is ERC721, IERC2981, Ownable, ERC721Burnable,
     }
 
     /**
-     * @dev Mints a new NFT with specified metadata components
+     * @dev Mints a new NFT, using overloaded functions to make some of the parameters optional
      * @param to The address that will receive the minted NFT (optional, defaults to contract owner)
      * @param name The name of the NFT
-     * @param description A detailed description of the NFT (optional)
+     * @param description A detailed description of the NFT (optional, defaults to empty string)
      * @param image The URI pointing to the NFT's image
      */
     function safeMintWithMetadata(
@@ -129,7 +112,8 @@ contract VariousPicturesCollection is ERC721, IERC2981, Ownable, ERC721Burnable,
     }
 
     /**
-     * @dev Mints a new NFT with a complete tokenURI
+     * @dev Mints a new NFT with a complete tokenURImetadata, 
+     * @dev the metadata in this function are more customisable, however it comes with higher technical complexity
      * @param to The address that will receive the minted NFT
      * @param tokenURImetadata The complete URI containing the NFT's metadata
      */
@@ -150,6 +134,7 @@ contract VariousPicturesCollection is ERC721, IERC2981, Ownable, ERC721Burnable,
     /** PAYOUT **/
 
     using Address for address payable;
+    using SafeERC20 for IERC20;
 
     function withdraw() public onlyOwner nonReentrant {
         uint256 balance = address(this).balance;
@@ -158,13 +143,17 @@ contract VariousPicturesCollection is ERC721, IERC2981, Ownable, ERC721Burnable,
     }
 
     /**
-     * @param token is the ERC20 token that will be withdrawn.
-     * @param to is the address that will receive the tokens.
+     * @dev withdraws ERC20 tokens from the contract
+     * @param token The ERC20 token to withdraw
+     * @param to The address that will receive the tokens
+     * @notice Uses SafeERC20 to handle non-standard ERC20 tokens
      */
     function withdrawERC20Token(IERC20 token, address to) external onlyOwner nonReentrant {
         uint256 amount = token.balanceOf(address(this));
         if (amount == 0) revert NoTokensToWithdraw();
-        if (!token.transfer(to, amount)) revert TokenTransferFailed();
+        if (to == address(0)) revert ZeroAddress();
+        
+        token.safeTransfer(to, amount);
     }  
 
     function checkERC20Balance(IERC20 token) external view returns (uint256) {
@@ -209,7 +198,7 @@ contract VariousPicturesCollection is ERC721, IERC2981, Ownable, ERC721Burnable,
         override
         returns (address receiver, uint256 royaltyAmount)
     {
-        return (_royaltyReceiver, (salePrice * _royaltyBasisPoints) / 10000);
+        return (_royaltyReceiver, (salePrice * _royaltyBasisPoints) / MAX_ROYALTY_BASIS_POINTS);
     }
 
     /// @dev EIP2981 standard Interface return. Adds to ERC721 and ERC165 Interface returns.
@@ -246,8 +235,9 @@ contract VariousPicturesCollection is ERC721, IERC2981, Ownable, ERC721Burnable,
     /**
      * @dev Updates the contract metadata URI.
      * @param newURI The new metadata URI to set.
-     * @notice If the _royaltyReceiver is changed in the new URI it should be updated manually by the owner or maintainer in the contract as well, by setRoyaltyReceiver function.
-     * Marketplaces may use own internal setup which should be aligned with the will of the owner or maintainer of the contract
+     * @notice If the _royaltyReceiver is changed in the new URI it should be updated 
+     * manually by the owner or maintainer in the contract as well, by setRoyaltyReceiver function.
+     * Marketplaces may use own internal setup
      */
     function updateContractMetadataURI(string memory newURI) public onlyOwner {
         if (bytes(newURI).length == 0) revert EmptyURI();
@@ -257,16 +247,30 @@ contract VariousPicturesCollection is ERC721, IERC2981, Ownable, ERC721Burnable,
         emit MetadataURIUpdated(oldURI, newURI);
     }
 
+    /**
+     * @dev This URI is used by NFT marketplaces, unless they use own internal setup.
+     * @return The collection contract metadata URI.
+     */
     function contractURI() public view returns (string memory) {
         return _contractMetadataURI;
     }
 
     mapping(uint256 => string) private _tokenURIs;
 
+    /**
+     * @dev Sets the token URI for a specific NFT token.
+     * @param tokenId The ID of the NFT token.
+     * @param tokenURImetadata The URI containing the NFT's metadata.
+     */
     function _setTokenURI(uint256 tokenId, string memory tokenURImetadata) internal {
         _tokenURIs[tokenId] = tokenURImetadata;
     }
 
+    /**
+     * @dev Returns the token URI for a specific NFT token.
+     * @param tokenId The ID of the NFT token.
+     * @return The URI containing the NFT's metadata.
+     */
     function tokenURI(uint256 tokenId)
         public
         view
@@ -280,7 +284,13 @@ contract VariousPicturesCollection is ERC721, IERC2981, Ownable, ERC721Burnable,
         return tokenURImetadata;
     }
 
-    // / @dev Helper function to create TokenURI from metadata components
+    /**
+     * @dev Creates a token URI for a new NFT.
+     * @param name The name of the NFT.
+     * @param description A detailed description of the NFT.
+     * @param image The URI of the NFT's image.
+     * @return The token URI for the new NFT.
+     */
     function createTokenURI(
         string memory name,
         string memory description,
