@@ -2,6 +2,9 @@
 cache/
 out/
 
+# Dependency directory
+lib/
+
 # Ignores development broadcast logs
 !/broadcast
 /broadcast/*/31337/
@@ -15,4 +18,4 @@ docs/
 
 # Coverage
 lcov.info
-/coverage-report
+coverage-report/

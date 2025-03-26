@@ -33,17 +33,20 @@ all: clean remove install update build
 # Default values -> local network
 NETWORK_ARGS := --rpc-url http://localhost:8545 --private-key $(DEFAULT_ANVIL_KEY) --broadcast
 
+# Hardware wallet configurations
 TREZOR_ARGS := --trezor --mnemonic-indexes $(TREZOR_INDEX) --sender $(TREZOR_ADDRESS)
 
-ifeq ($(findstring --network sepolia,$(ARGS)),--network sepolia)
-	NETWORK_ARGS := --rpc-url $(SEPOLIA_RPC_URL) --private-key $(SEPOLIA_PRIVATE_KEY) --broadcast --verify --etherscan-api-key $(ETHERSCAN_API_KEY) -vvvv
-	NETWORK_ARGS_TREZOR := --rpc-url $(SEPOLIA_RPC_URL) $(TREZOR_ARGS) --broadcast --verify --etherscan-api-key $(ETHERSCAN_API_KEY) -vvvv
-endif
+# Network specific arguments
+SEPOLIA_ARGS := --rpc-url $(SEPOLIA_RPC_URL) --broadcast --verify --etherscan-api-key $(ETHERSCAN_API_KEY) -vvvv
+BASE_ARGS := --rpc-url $(BASE_RPC_URL) --broadcast --verify --etherscan-api-key $(BASE_SCAN_API_KEY) -vvvv
 
-ifeq ($(findstring --network base,$(ARGS)),--network base)
-	NETWORK_ARGS := --rpc-url $(BASE_RPC_URL) --private-key $(BASE_PRIVATE_KEY) --broadcast --verify --etherscan-api-key $(BASE_SCAN_API_KEY) -vvvv
-	NETWORK_ARGS_TREZOR := --rpc-url $(BASE_RPC_URL) $(TREZOR_ARGS) --broadcast --verify --etherscan-api-key $(BASE_SCAN_API_KEY) -vvvv
-endif
+# Private key specific arguments
+SEPOLIA_KEY_ARGS := $(SEPOLIA_ARGS) --private-key $(SEPOLIA_PRIVATE_KEY)
+BASE_KEY_ARGS := $(BASE_ARGS) --private-key $(BASE_PRIVATE_KEY)
+
+# Trezor specific arguments
+SEPOLIA_TREZOR_ARGS := $(SEPOLIA_ARGS) $(TREZOR_ARGS)
+BASE_TREZOR_ARGS := $(BASE_ARGS) $(TREZOR_ARGS)
 
 # Deployment commands
 deploy-local:
@@ -51,17 +54,17 @@ deploy-local:
 
 # Sepolia
 deploy-sepolia:
-	@forge script script/DeployVariousPicturesCollection.s.sol:DeployVariousPicturesCollection --network sepolia $(NETWORK_ARGS)
+	@forge script script/DeployVariousPicturesCollection.s.sol:DeployVariousPicturesCollection $(SEPOLIA_KEY_ARGS)
 
 deploy-sepolia-trezor:
-	@forge script script/DeployVariousPicturesCollection.s.sol:DeployVariousPicturesCollection --network sepolia $(NETWORK_ARGS_TREZOR)
+	@forge script script/DeployVariousPicturesCollection.s.sol:DeployVariousPicturesCollection $(SEPOLIA_TREZOR_ARGS)
 
 # Base
 deploy-base:
-	@forge script script/DeployVariousPicturesCollection.s.sol:DeployVariousPicturesCollection --network base $(NETWORK_ARGS)
+	@forge script script/DeployVariousPicturesCollection.s.sol:DeployVariousPicturesCollection $(BASE_KEY_ARGS)
 
 deploy-base-trezor:
-	@forge script script/DeployVariousPicturesCollection.s.sol:DeployVariousPicturesCollection --network base $(NETWORK_ARGS_TREZOR)
+	@forge script script/DeployVariousPicturesCollection.s.sol:DeployVariousPicturesCollection $(BASE_TREZOR_ARGS)
 
 
 # Verification

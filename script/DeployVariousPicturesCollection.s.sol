@@ -17,15 +17,11 @@ contract DeployVariousPicturesCollection is Script {
         vm.startBroadcast();
 
         // Deploy the contract
-        VariousPicturesCollection collection = new VariousPicturesCollection(
-            name,
-            symbol,
-            contractMetadataURI,
-            initialRoyaltyBasisPoints
-        );
+        VariousPicturesCollection collection =
+            new VariousPicturesCollection(name, symbol, contractMetadataURI, initialRoyaltyBasisPoints);
 
         vm.stopBroadcast();
-        
+
         return collection;
     }
 }
