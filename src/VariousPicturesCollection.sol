@@ -35,7 +35,6 @@ contract VariousPicturesCollection is ERC721, IERC2981, Ownable, ERC721Burnable,
     event RoyaltyUpdated(uint256 oldRoyaltyBasisPoints, uint256 newRoyaltyBasisPoints);
     event RoyaltyReceiverUpdated(address indexed previousReceiver, address indexed newReceiver);
     event MetadataURIUpdated(string previousURI, string newURI);
-    event NFTBurned(uint256 indexed tokenId, address indexed burner);
 
     constructor(
         string memory name,
@@ -69,7 +68,7 @@ contract VariousPicturesCollection is ERC721, IERC2981, Ownable, ERC721Burnable,
     }
 
     /**
-     * @dev Mints a new NFT
+     * @dev Mints a new NFT, using overloading to make some parameters optional
      * @param to The address that will receive the minted NFT (optional, defaults to contract owner)
      * @param name The name of the NFT
      * @param description A detailed description of the NFT (optional, defaults to empty string)
@@ -84,20 +83,17 @@ contract VariousPicturesCollection is ERC721, IERC2981, Ownable, ERC721Burnable,
         if (to == address(0)) revert ZeroAddress();
         _validateMetadata(name, description, image);
         
-        uint256 tokenId;
-        unchecked {
-            tokenId = _nftCounter++;
-        }
-        
+        uint256 tokenId = _nftCounter;
         _safeMint(to, tokenId);
         _setTokenURI(tokenId, createTokenURI(name, description, image));
+        _nftCounter++;
         
         emit NFTMinted(to, tokenId, name, description, image);
     }
 
     /**
-     * @dev Mints a new NFT with a complete tokenURImetadata, 
-     * @dev the metadata in this function are more customisable, however it comes with higher technical complexity
+     * @dev Mints a new NFT with a complete tokenURImetadata
+     * @dev the metadata in this function are more customisable, however it comes with "you must know how to do it" UX
      * @param to The address that will receive the minted NFT
      * @param tokenURImetadata The complete URI containing the NFT's metadata
      */
@@ -246,7 +242,7 @@ contract VariousPicturesCollection is ERC721, IERC2981, Ownable, ERC721Burnable,
      * @param tokenId The ID of the NFT token.
      * @param tokenURImetadata The URI containing the NFT's metadata.
      */
-    function _setTokenURI(uint256 tokenId, string memory tokenURImetadata) internal {
+    function _setTokenURI(uint256 tokenId, string memory tokenURImetadata) internal onlyOwner {
         _tokenURIs[tokenId] = tokenURImetadata;
     }
 
@@ -283,7 +279,7 @@ contract VariousPicturesCollection is ERC721, IERC2981, Ownable, ERC721Burnable,
         if (bytes(name).length == 0) revert EmptyName();
         if (bytes(image).length == 0) revert EmptyImage();
 
-        return string.concat(
+        return string(abi.encodePacked(
             'data:application/json;base64,',
             Base64.encode(
                 abi.encodePacked(
@@ -292,7 +288,7 @@ contract VariousPicturesCollection is ERC721, IERC2981, Ownable, ERC721Burnable,
                     '","image":"', image, '"}'
                 )
             )
-        );
+        ));
     }
 
     uint256 private constant MAX_NAME_LENGTH = 256;

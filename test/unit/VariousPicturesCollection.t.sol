@@ -384,10 +384,28 @@ contract VariousPicturesCollectionTest is Test {
 
     /** METADATA **/
 
+    function testConstructorParameters() public view {
+        assertEq(collection.name(), COLLECTION_NAME);
+        assertEq(collection.symbol(), COLLECTION_SYMBOL);
+        assertEq(collection.contractURI(), COLLECTION_URI);
+    }
+
+    function test_Revert_ConstructorEmptyMetadata() public {
+        vm.prank(owner);
+        vm.expectRevert(abi.encodeWithSignature("EmptyMetadata()"));
+        new VariousPicturesCollection(
+            COLLECTION_NAME,
+            COLLECTION_SYMBOL,
+            "",
+            COLLECTION_ROYALTY_BASIS_POINTS
+        );
+    }
+
     function testInitialContractURI() public view {
         assertEq(collection.contractURI(), COLLECTION_URI);
     }
 
+    /** Test updateContractMetadataURI function **/
     function testUpdateContractMetadataURI() public {
         string memory newURI = "https://arweave.net/newmetadata";
         
@@ -409,26 +427,50 @@ contract VariousPicturesCollectionTest is Test {
         collection.updateContractMetadataURI("https://arweave.net/newmetadata");
     }
 
-    function testConstructorParameters() public view {
-        assertEq(collection.name(), COLLECTION_NAME);
-        assertEq(collection.symbol(), COLLECTION_SYMBOL);
-        assertEq(collection.contractURI(), COLLECTION_URI);
-    }
-
-    function test_Revert_ConstructorEmptyMetadata() public {
-        vm.prank(owner);
-        vm.expectRevert(abi.encodeWithSignature("EmptyMetadata()"));
-        new VariousPicturesCollection(
-            COLLECTION_NAME,
-            COLLECTION_SYMBOL,
-            "",
-            COLLECTION_ROYALTY_BASIS_POINTS
-        );
-    }
-
+    /** Test tokenURI function **/
     function test_Revert_TokenURINonexistentToken() public {
         vm.expectRevert(abi.encodeWithSignature("NonexistentToken()"));
         collection.tokenURI(999); // Token ID that doesn't exist
+    }
+
+    /** Test createTokenURI function **/
+    function test_createTokenURI_ReturnsValidURI() public view {
+        string memory name = "Test NFT";
+        string memory description = "This is a test NFT";
+        string memory image = "ipfs://testimage";
+
+        string memory tokenURI = collection.createTokenURI(name, description, image);
+        
+        string memory expectedURI = string.concat(
+            'data:application/json;base64,',
+            Base64.encode(
+                abi.encodePacked(
+                    '{"name":"', name, 
+                    '","description":"', description, 
+                    '","image":"', image, '"}'
+                )
+            )
+        );
+
+        assertEq(tokenURI, expectedURI);
+    }
+
+    function test_Revert_createTokenURI_RevertsWhenNameEmpty() public {
+        string memory emptyName = "";
+        string memory validDescription = "Test NFT Description";
+        string memory validImage = "ipfs://testimage";
+
+        vm.expectRevert(abi.encodeWithSignature("EmptyName()"));
+        collection.createTokenURI(emptyName, validDescription, validImage);
+    }
+
+    function test_Revert_createTokenURI_RevertsWhenImageEmpty() public {
+        string memory validName = "Test NFT";
+        string memory validDescription = "Test NFT Description";
+        string memory emptyImage = "";
+
+        vm.expectRevert(abi.encodeWithSignature("EmptyImage()"));
+        collection.createTokenURI(validName, validDescription, emptyImage);
     }
 
     receive() external payable {} // Allow contract to receive ETH

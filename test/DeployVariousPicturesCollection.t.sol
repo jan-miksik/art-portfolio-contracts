@@ -12,7 +12,7 @@ contract DeployVariousPicturesCollectionTest is Test {
     uint256 constant ROYALTY_BASIS_POINTS = 250; // 2.5%
     string constant NAME = "Various Pictures";
     string constant SYMBOL = "VPIC";
-    string constant CONTRACT_METADATA_URI = "ipfs://QmTest";
+    string constant COLLECTION_URI = "ipfs://QmTest";
 
     uint256 constant MAX_ROYALTY_BASIS_POINTS = 10000;
 
@@ -25,7 +25,7 @@ contract DeployVariousPicturesCollectionTest is Test {
         vm.setEnv("INITIAL_ROYALTY_BASIS_POINTS", vm.toString(ROYALTY_BASIS_POINTS));
         vm.setEnv("COLLECTION_NAME", NAME);
         vm.setEnv("COLLECTION_SYMBOL", SYMBOL);
-        vm.setEnv("CONTRACT_METADATA_URI", CONTRACT_METADATA_URI);
+        vm.setEnv("COLLECTION_URI", COLLECTION_URI);
 
         // Deploy the contract
         VariousPicturesCollection collection = deployer.run();
@@ -33,7 +33,7 @@ contract DeployVariousPicturesCollectionTest is Test {
         // Verify the contract was deployed with correct parameters
         assertEq(collection.name(), NAME, "Incorrect name");
         assertEq(collection.symbol(), SYMBOL, "Incorrect symbol");
-        assertEq(collection.contractURI(), CONTRACT_METADATA_URI, "Incorrect contract URI");
+        assertEq(collection.contractURI(), COLLECTION_URI, "Incorrect contract URI");
         
         // Test royalty info for a theoretical NFT worth 10000 wei
         (address receiver, uint256 royaltyAmount) = collection.royaltyInfo(1, 1 ether);
@@ -49,7 +49,7 @@ contract DeployVariousPicturesCollectionTest is Test {
         vm.setEnv("INITIAL_ROYALTY_BASIS_POINTS", vm.toString(invalidRoyalty));
         vm.setEnv("COLLECTION_NAME", NAME);
         vm.setEnv("COLLECTION_SYMBOL", SYMBOL);
-        vm.setEnv("CONTRACT_METADATA_URI", CONTRACT_METADATA_URI);
+        vm.setEnv("COLLECTION_URI", COLLECTION_URI);
 
         // This should revert with RoyaltyTooHigh()
         vm.expectRevert(abi.encodeWithSignature("RoyaltyTooHigh()"));

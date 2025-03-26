@@ -11,7 +11,7 @@ contract DeployVariousPicturesCollection is Script {
         uint256 initialRoyaltyBasisPoints = vm.envUint("INITIAL_ROYALTY_BASIS_POINTS");
         string memory name = vm.envString("COLLECTION_NAME");
         string memory symbol = vm.envString("COLLECTION_SYMBOL");
-        string memory contractMetadataURI = vm.envString("CONTRACT_METADATA_URI");
+        string memory contractMetadataURI = vm.envString("COLLECTION_URI");
 
         // Start broadcasting transactions
         vm.startBroadcast();
