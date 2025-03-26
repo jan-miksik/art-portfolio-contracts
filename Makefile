@@ -4,7 +4,7 @@ DEFAULT_ANVIL_KEY := 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf
 
 # Build & Test commands
 build :; forge build
-test :; forge test 
+test :; forge test
 coverage :; forge coverage
 gas-report :; forge test --gas-report
 format :; forge fmt
@@ -28,7 +28,15 @@ install :; forge install OpenZeppelin/openzeppelin-contracts --no-commit && \
 # Local development
 anvil :; anvil -m 'test test test test test test test test test test test junk' --steps-tracing --block-time 1
 
-all: clean remove install update build
+# Development tools
+install-precommit:
+	pre-commit install
+
+check: install
+	pre-commit run --all-files
+
+# You can also add this to your all target
+all: clean remove install update build install-precommit
 
 # Default values -> local network
 NETWORK_ARGS := --rpc-url http://localhost:8545 --private-key $(DEFAULT_ANVIL_KEY) --broadcast
@@ -72,4 +80,3 @@ verify-contract :; forge verify-contract --chain-id ${CHAIN_ID} --num-of-optimiz
 
 # Documentation
 doc :; forge doc --serve --port 4000
- 

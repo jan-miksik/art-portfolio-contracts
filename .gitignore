@@ -20,3 +20,7 @@ docs/
 # Coverage
 lcov.info
 coverage-report/
+
+# Act local runner
+.actrc
+/act

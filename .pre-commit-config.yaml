@@ -1,0 +1,28 @@
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.5.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-added-large-files
+
+  - repo: local
+    hooks:
+      - id: forge-fmt
+        name: Forge format
+        entry: forge fmt
+        language: system
+        pass_filenames: false
+
+      - id: forge-build
+        name: Forge build
+        entry: forge build
+        language: system
+        pass_filenames: false
+
+      - id: forge-test
+        name: Forge test
+        entry: forge test
+        language: system
+        pass_filenames: false
