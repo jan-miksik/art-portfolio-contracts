@@ -6,13 +6,6 @@ The general idea is once the image for the NFT is created, the owner mint the NF
 
 The contract doesn’t limit NFT amounts. The collection is meant to releasing slowly NFTs during time without any specific vision about final amount
 
-## what to do
-1. setup env variables - rename .env.exmaple -> .env (the actuall env should always stay on local machine)
-2. `$ make all` should install and prepeare all the stuff, details are in Makefile
-3a. `$ make deploy-sepolia` deploy contract to Sepolia
-3b. `$ make deploy-sepolia-trezor` deploy contract to Sepolia with Trezor hardware wallet
-3c. `$ make deploy-base-trezor` deploy contract to Base with Trezor hardware wallet
-
 
 ## Thanks to tools and courses
 - foundry https://book.getfoundry.sh/
