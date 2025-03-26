@@ -22,8 +22,8 @@ remove :; rm -rf .git/modules/* && \
 	rm -rf broadcast
 
 # Install dependencies
-install :; forge install OpenZeppelin/openzeppelin-contracts --no-commit && \
-	forge install foundry-rs/forge-std@v1.8.2 --no-commit
+install :; forge install OpenZeppelin/openzeppelin-contracts && \
+	forge install foundry-rs/forge-std@v1.8.2
 
 # Local development
 anvil :; anvil -m 'test test test test test test test test test test test junk' --steps-tracing --block-time 1
