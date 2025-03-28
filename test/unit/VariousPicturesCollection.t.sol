@@ -7,6 +7,7 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {Base64} from "@openzeppelin/contracts/utils/Base64.sol";
 
 error OwnableUnauthorizedAccount(address account);
+error ERC721NonexistentToken(uint256 tokenId);
 
 contract MockERC20 is IERC20 {
     mapping(address => uint256) private _balances;
@@ -413,7 +414,7 @@ contract VariousPicturesCollectionTest is Test {
      * Test tokenURI function *
      */
     function test_Revert_TokenURINonexistentToken() public {
-        vm.expectRevert(abi.encodeWithSignature("NonexistentToken()"));
+        vm.expectRevert(abi.encodeWithSelector(ERC721NonexistentToken.selector, 999));
         collection.tokenURI(999); // Token ID that doesn't exist
     }
 

@@ -11,13 +11,12 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/utils/Address.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Burnable.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
 
 error EmptyTokenURI();
 error ZeroAddress();
-error NonexistentToken();
 error NoEtherToWithdraw();
 error NoTokensToWithdraw();
-error TokenTransferFailed();
 error SameRoyaltyReceiver();
 error EmptyName();
 error EmptyImage();
@@ -29,7 +28,7 @@ error NameTooLong();
 error DescriptionTooLong();
 error ImageURITooLong();
 
-contract VariousPicturesCollection is ERC721, IERC2981, Ownable, ERC721Burnable, ReentrancyGuard {
+contract VariousPicturesCollection is ERC721, IERC2981, Ownable, ERC721Burnable, ReentrancyGuard, ERC721URIStorage {
     event NFTMinted(address indexed to, uint256 indexed tokenId, string name, string description, string image);
     event NFTMintedWithURI(address indexed to, uint256 indexed tokenId, string tokenURImetadata);
     event RoyaltyUpdated(uint256 oldRoyaltyBasisPoints, uint256 newRoyaltyBasisPoints);
@@ -174,11 +173,6 @@ contract VariousPicturesCollection is ERC721, IERC2981, Ownable, ERC721Burnable,
         return (_royaltyReceiver, (salePrice * _royaltyBasisPoints) / MAX_ROYALTY_BASIS_POINTS);
     }
 
-    /// @dev EIP2981 standard Interface return. Adds to ERC721 and ERC165 Interface returns.
-    function supportsInterface(bytes4 interfaceId) public view virtual override(ERC721, IERC165) returns (bool) {
-        return (interfaceId == type(IERC2981).interfaceId || super.supportsInterface(interfaceId));
-    }
-
     /**
      * @dev Updates the royalty percentage in basis points
      * @param newBasisPoints The new royalty percentage in basis points (e.g., 500 = 5%).
@@ -220,27 +214,13 @@ contract VariousPicturesCollection is ERC721, IERC2981, Ownable, ERC721Burnable,
         return _contractMetadataURI;
     }
 
-    mapping(uint256 => string) private _tokenURIs;
-
     /**
-     * @dev Sets the token URI for a specific NFT token.
-     * @param tokenId The ID of the NFT token.
-     * @param tokenURImetadata The URI containing the NFT's metadata.
+     * @dev The following function is override required by Solidity.
+     * @param tokenId token id ot the NFT
+     * @return The metadata URI of tokenId
      */
-    function _setTokenURI(uint256 tokenId, string memory tokenURImetadata) internal onlyOwner {
-        _tokenURIs[tokenId] = tokenURImetadata;
-    }
-
-    /**
-     * @dev Returns the token URI for a specific NFT token.
-     * @param tokenId The ID of the NFT token.
-     * @return The URI containing the NFT's metadata.
-     */
-    function tokenURI(uint256 tokenId) public view virtual override returns (string memory) {
-        if (_ownerOf(tokenId) == address(0)) revert NonexistentToken();
-
-        string memory tokenURImetadata = _tokenURIs[tokenId];
-        return tokenURImetadata;
+    function tokenURI(uint256 tokenId) public view override(ERC721, ERC721URIStorage) returns (string memory) {
+        return super.tokenURI(tokenId);
     }
 
     /**
@@ -284,5 +264,16 @@ contract VariousPicturesCollection is ERC721, IERC2981, Ownable, ERC721Burnable,
         if (bytes(name).length > MAX_NAME_LENGTH) revert NameTooLong();
         if (bytes(description).length > MAX_DESCRIPTION_LENGTH) revert DescriptionTooLong();
         if (bytes(imageURI).length > MAX_IMAGE_URI_LENGTH) revert ImageURITooLong();
+    }
+
+    /// @dev EIP2981 standard Interface return. Adds to ERC721, ERC165 and ERC721URIStorage Interface returns.
+    function supportsInterface(bytes4 interfaceId)
+        public
+        view
+        virtual
+        override(ERC721, IERC165, ERC721URIStorage)
+        returns (bool)
+    {
+        return (interfaceId == type(IERC2981).interfaceId || super.supportsInterface(interfaceId));
     }
 }
