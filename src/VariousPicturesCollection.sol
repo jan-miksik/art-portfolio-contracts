@@ -27,6 +27,7 @@ error SameRoyaltyBasisPoints();
 error NameTooLong();
 error DescriptionTooLong();
 error ImageURITooLong();
+error TokenDoesNotExist(uint256 tokenId);
 
 contract VariousPicturesCollection is ERC721, IERC2981, Ownable, ERC721Burnable, ReentrancyGuard, ERC721URIStorage {
     event NFTMinted(address indexed to, uint256 indexed tokenId, string name, string description, string image);
@@ -34,17 +35,19 @@ contract VariousPicturesCollection is ERC721, IERC2981, Ownable, ERC721Burnable,
     event RoyaltyUpdated(uint256 oldRoyaltyBasisPoints, uint256 newRoyaltyBasisPoints);
     event RoyaltyReceiverUpdated(address indexed previousReceiver, address indexed newReceiver);
     event MetadataURIUpdated(string previousURI, string newURI);
+    event EtherWithdrawn(address indexed to, uint256 amount);
+    event ERC20TokenWithdrawn(address indexed token, address indexed to, uint256 amount);
 
     constructor(
-        string memory name,
-        string memory symbol,
-        string memory contractMetadataURI,
+        string memory collectionName,
+        string memory collectionSymbol,
+        string memory collectionContractMetadataURI,
         uint256 initialRoyaltyBasisPoints
-    ) ERC721(name, symbol) Ownable(msg.sender) {
-        if (bytes(contractMetadataURI).length == 0) revert EmptyMetadata();
+    ) ERC721(collectionName, collectionSymbol) Ownable(msg.sender) {
+        if (bytes(collectionContractMetadataURI).length == 0) revert EmptyMetadata();
         if (initialRoyaltyBasisPoints > MAX_ROYALTY_BASIS_POINTS) revert RoyaltyTooHigh();
 
-        _contractMetadataURI = contractMetadataURI;
+        _contractMetadataURI = collectionContractMetadataURI;
         _royaltyBasisPoints = initialRoyaltyBasisPoints;
         _royaltyReceiver = msg.sender;
     }
@@ -72,14 +75,15 @@ contract VariousPicturesCollection is ERC721, IERC2981, Ownable, ERC721Burnable,
     function safeMintWithMetadata(address to, string memory name, string memory description, string memory image)
         public
         onlyOwner
+        nonReentrant
     {
         if (to == address(0)) revert ZeroAddress();
         _validateMetadata(name, description, image);
 
         uint256 tokenId = _nftCounter;
+        _nftCounter++;
         _safeMint(to, tokenId);
         _setTokenURI(tokenId, createTokenURI(name, description, image));
-        _nftCounter++;
 
         emit NFTMinted(to, tokenId, name, description, image);
     }
@@ -95,9 +99,9 @@ contract VariousPicturesCollection is ERC721, IERC2981, Ownable, ERC721Burnable,
         if (to == address(0)) revert ZeroAddress();
 
         uint256 tokenId = _nftCounter;
+        _nftCounter++;
         _safeMint(to, tokenId);
         _setTokenURI(tokenId, tokenURImetadata);
-        _nftCounter++;
 
         emit NFTMintedWithURI(to, tokenId, tokenURImetadata);
     }
@@ -112,6 +116,7 @@ contract VariousPicturesCollection is ERC721, IERC2981, Ownable, ERC721Burnable,
         uint256 balance = address(this).balance;
         if (balance == 0) revert NoEtherToWithdraw();
         Address.sendValue(payable(owner()), balance);
+        emit EtherWithdrawn(owner(), balance);
     }
 
     /**
@@ -126,6 +131,7 @@ contract VariousPicturesCollection is ERC721, IERC2981, Ownable, ERC721Burnable,
         if (to == address(0)) revert ZeroAddress();
 
         token.safeTransfer(to, amount);
+        emit ERC20TokenWithdrawn(address(token), to, amount);
     }
 
     function checkERC20Balance(IERC20 token) external view returns (uint256) {
@@ -216,10 +222,12 @@ contract VariousPicturesCollection is ERC721, IERC2981, Ownable, ERC721Burnable,
 
     /**
      * @dev The following function is override required by Solidity.
-     * @param tokenId token id ot the NFT
+     * @param tokenId token id of the NFT
      * @return The metadata URI of tokenId
+     * @notice Reverts if the token doesn't exist
      */
     function tokenURI(uint256 tokenId) public view override(ERC721, ERC721URIStorage) returns (string memory) {
+        if (_ownerOf(tokenId) == address(0)) revert TokenDoesNotExist(tokenId);
         return super.tokenURI(tokenId);
     }
 
