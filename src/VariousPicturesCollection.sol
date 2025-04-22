@@ -52,9 +52,9 @@ contract VariousPicturesCollection is ERC721, IERC2981, Ownable, ERC721Burnable,
         _royaltyReceiver = msg.sender;
     }
 
-    /**
-     * MINTING *
-     */
+    /*//////////////////////////////////////////////////////////////
+                           MINTING
+    //////////////////////////////////////////////////////////////*/
     uint256 private _nftCounter;
 
     function mintedNFTs() public view returns (uint256) {
@@ -106,9 +106,9 @@ contract VariousPicturesCollection is ERC721, IERC2981, Ownable, ERC721Burnable,
         emit NFTMintedWithURI(to, tokenId, tokenURImetadata);
     }
 
-    /**
-     * PAYOUT *
-     */
+    /*//////////////////////////////////////////////////////////////
+                           PAYOUT
+    //////////////////////////////////////////////////////////////*/
     using Address for address payable;
     using SafeERC20 for IERC20;
 
@@ -138,9 +138,9 @@ contract VariousPicturesCollection is ERC721, IERC2981, Ownable, ERC721Burnable,
         return token.balanceOf(address(this));
     }
 
-    /**
-     * ROYALTIES *
-     */
+    /*//////////////////////////////////////////////////////////////
+                           ROYALTIES
+    //////////////////////////////////////////////////////////////*/
 
     /**
      * @dev _royaltyReceiver is accepted by some marketplaces.
@@ -192,9 +192,9 @@ contract VariousPicturesCollection is ERC721, IERC2981, Ownable, ERC721Burnable,
         emit RoyaltyUpdated(oldRoyaltyBasisPoints, newBasisPoints);
     }
 
-    /**
-     * METADATA *
-     */
+    /*//////////////////////////////////////////////////////////////
+                           METADATA
+    //////////////////////////////////////////////////////////////*/
     string private _contractMetadataURI;
 
     /**
