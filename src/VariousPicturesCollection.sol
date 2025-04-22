@@ -1,17 +1,17 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
-import "@openzeppelin/contracts/interfaces/IERC2981.sol";
-import "@openzeppelin/contracts/utils/Strings.sol";
-import "@openzeppelin/contracts/utils/Base64.sol";
-import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/utils/Address.sol";
-import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Burnable.sol";
-import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
+import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+import {IERC2981} from "@openzeppelin/contracts/interfaces/IERC2981.sol";
+import {Base64} from "@openzeppelin/contracts/utils/Base64.sol";
+import {ERC721} from "@openzeppelin/contracts/token/ERC721/ERC721.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {Address} from "@openzeppelin/contracts/utils/Address.sol";
+import {ERC721Burnable} from "@openzeppelin/contracts/token/ERC721/extensions/ERC721Burnable.sol";
+import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {ERC721URIStorage} from "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
+import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 
 error EmptyTokenURI();
 error ZeroAddress();
@@ -57,35 +57,36 @@ contract VariousPicturesCollection is ERC721, IERC2981, Ownable, ERC721Burnable,
     //////////////////////////////////////////////////////////////*/
     uint256 private _nftCounter;
 
-    function mintedNFTs() public view returns (uint256) {
+    function mintedNFTs() external view returns (uint256) {
         return _nftCounter;
     }
 
-    function safeMintWithMetadata(string memory name, string memory image) public onlyOwner {
-        safeMintWithMetadata(owner(), name, "", image);
+    function safeMintWithMetadata(string memory nftName, string memory image) external onlyOwner {
+        safeMintWithMetadata(owner(), nftName, "", image);
     }
 
     /**
      * @dev Mints a new NFT, using overloading to make some parameters optional
      * @param to The address that will receive the minted NFT (optional, defaults to contract owner)
-     * @param name The name of the NFT
+     * @param nftName The name of the NFT
      * @param description A detailed description of the NFT (optional, defaults to empty string)
      * @param image The URI pointing to the NFT's image
      */
-    function safeMintWithMetadata(address to, string memory name, string memory description, string memory image)
+    function safeMintWithMetadata(address to, string memory nftName, string memory description, string memory image)
         public
-        onlyOwner
         nonReentrant
+        onlyOwner
     {
         if (to == address(0)) revert ZeroAddress();
-        _validateMetadata(name, description, image);
+        _validateMetadata(nftName, description, image);
 
         uint256 tokenId = _nftCounter;
         _nftCounter++;
-        _safeMint(to, tokenId);
-        _setTokenURI(tokenId, createTokenURI(name, description, image));
 
-        emit NFTMinted(to, tokenId, name, description, image);
+        _setTokenURI(tokenId, createTokenURI(nftName, description, image));
+        _safeMint(to, tokenId);
+
+        emit NFTMinted(to, tokenId, nftName, description, image);
     }
 
     /**
@@ -94,14 +95,15 @@ contract VariousPicturesCollection is ERC721, IERC2981, Ownable, ERC721Burnable,
      * @param to The address that will receive the minted NFT
      * @param tokenURImetadata The complete URI containing the NFT's metadata
      */
-    function safeMintWithURI(address to, string memory tokenURImetadata) public onlyOwner nonReentrant {
+    function safeMintWithURI(address to, string memory tokenURImetadata) external nonReentrant onlyOwner {
         if (bytes(tokenURImetadata).length == 0) revert EmptyTokenURI();
         if (to == address(0)) revert ZeroAddress();
 
         uint256 tokenId = _nftCounter;
         _nftCounter++;
-        _safeMint(to, tokenId);
+
         _setTokenURI(tokenId, tokenURImetadata);
+        _safeMint(to, tokenId);
 
         emit NFTMintedWithURI(to, tokenId, tokenURImetadata);
     }
@@ -112,8 +114,9 @@ contract VariousPicturesCollection is ERC721, IERC2981, Ownable, ERC721Burnable,
     using Address for address payable;
     using SafeERC20 for IERC20;
 
-    function withdraw() public onlyOwner nonReentrant {
+    function withdraw() external nonReentrant onlyOwner {
         uint256 balance = address(this).balance;
+        // slither-disable-next-line incorrect-equality
         if (balance == 0) revert NoEtherToWithdraw();
         Address.sendValue(payable(owner()), balance);
         emit EtherWithdrawn(owner(), balance);
@@ -125,8 +128,9 @@ contract VariousPicturesCollection is ERC721, IERC2981, Ownable, ERC721Burnable,
      * @param to The address that will receive the tokens
      * @notice Uses SafeERC20 to handle non-standard ERC20 tokens
      */
-    function withdrawERC20Token(IERC20 token, address to) external onlyOwner nonReentrant {
+    function withdrawERC20Token(IERC20 token, address to) external nonReentrant onlyOwner {
         uint256 amount = token.balanceOf(address(this));
+        // slither-disable-next-line incorrect-equality
         if (amount == 0) revert NoTokensToWithdraw();
         if (to == address(0)) revert ZeroAddress();
 
@@ -151,9 +155,9 @@ contract VariousPicturesCollection is ERC721, IERC2981, Ownable, ERC721Burnable,
      */
     address private _royaltyReceiver;
     uint256 private _royaltyBasisPoints;
-    uint256 private constant MAX_ROYALTY_BASIS_POINTS = 10000;
+    uint256 private constant MAX_ROYALTY_BASIS_POINTS = 1e4;
 
-    function setRoyaltyReceiver(address newReceiver) public onlyOwner {
+    function setRoyaltyReceiver(address newReceiver) external onlyOwner {
         if (newReceiver == address(0)) revert ZeroAddress();
         if (newReceiver == _royaltyReceiver) revert SameRoyaltyReceiver();
 
@@ -162,7 +166,7 @@ contract VariousPicturesCollection is ERC721, IERC2981, Ownable, ERC721Burnable,
         emit RoyaltyReceiverUpdated(oldReceiver, newReceiver);
     }
 
-    function getRoyaltyReceiver() public view returns (address) {
+    function getRoyaltyReceiver() external view returns (address) {
         return _royaltyReceiver;
     }
 
@@ -204,7 +208,7 @@ contract VariousPicturesCollection is ERC721, IERC2981, Ownable, ERC721Burnable,
      * manually by the owner or maintainer in the contract as well, by setRoyaltyReceiver function.
      * Marketplaces may use own internal setup
      */
-    function updateContractMetadataURI(string memory newURI) public onlyOwner {
+    function updateContractMetadataURI(string memory newURI) external onlyOwner {
         if (bytes(newURI).length == 0) revert EmptyURI();
 
         string memory oldURI = _contractMetadataURI;
@@ -216,7 +220,7 @@ contract VariousPicturesCollection is ERC721, IERC2981, Ownable, ERC721Burnable,
      * @dev This URI is used by NFT marketplaces, unless they use own internal setup.
      * @return The collection contract metadata URI.
      */
-    function contractURI() public view returns (string memory) {
+    function contractURI() external view returns (string memory) {
         return _contractMetadataURI;
     }
 
@@ -233,27 +237,23 @@ contract VariousPicturesCollection is ERC721, IERC2981, Ownable, ERC721Burnable,
 
     /**
      * @dev Creates a token URI for a new NFT.
-     * @param name The name of the NFT.
+     * @param nftName The name of the NFT.
      * @param description A detailed description of the NFT.
      * @param image The URI of the NFT's image.
      * @return The token URI for the new NFT.
      */
-    function createTokenURI(string memory name, string memory description, string memory image)
+    function createTokenURI(string memory nftName, string memory description, string memory image)
         public
         pure
         returns (string memory)
     {
-        if (bytes(name).length == 0) revert EmptyName();
+        if (bytes(nftName).length == 0) revert EmptyName();
         if (bytes(image).length == 0) revert EmptyImage();
 
-        return string(
-            abi.encodePacked(
-                "data:application/json;base64,",
-                Base64.encode(
-                    abi.encodePacked('{"name":"', name, '","description":"', description, '","image":"', image, '"}')
-                )
-            )
-        );
+        string memory jsonContent =
+            string(abi.encodePacked('{"name":"', nftName, '","description":"', description, '","image":"', image, '"}'));
+
+        return string(abi.encodePacked("data:application/json;base64,", Base64.encode(bytes(jsonContent))));
     }
 
     uint256 private constant MAX_NAME_LENGTH = 256;
@@ -262,14 +262,17 @@ contract VariousPicturesCollection is ERC721, IERC2981, Ownable, ERC721Burnable,
 
     /**
      * @dev Validates the metadata for a new NFT.
-     * @param name The name of the NFT.
+     * @param nftName The name of the NFT.
      * @param description The description of the NFT.
      * @param imageURI The URI of the NFT's image.
      */
-    function _validateMetadata(string memory name, string memory description, string memory imageURI) internal pure {
-        if (bytes(name).length == 0) revert EmptyName();
+    function _validateMetadata(string memory nftName, string memory description, string memory imageURI)
+        internal
+        pure
+    {
+        if (bytes(nftName).length == 0) revert EmptyName();
         if (bytes(imageURI).length == 0) revert EmptyImage();
-        if (bytes(name).length > MAX_NAME_LENGTH) revert NameTooLong();
+        if (bytes(nftName).length > MAX_NAME_LENGTH) revert NameTooLong();
         if (bytes(description).length > MAX_DESCRIPTION_LENGTH) revert DescriptionTooLong();
         if (bytes(imageURI).length > MAX_IMAGE_URI_LENGTH) revert ImageURITooLong();
     }
