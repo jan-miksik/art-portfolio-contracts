@@ -17,3 +17,5 @@ The contract doesn't limit NFT amounts. The collection is meant for releasing NF
 ### Thanks to tools and courses
 - foundry https://book.getfoundry.sh/
 - cyfrin https://updraft.cyfrin.io/courses
+- Slither https://github.com/crytic/slither
+- Aderyn https://github.com/Cyfrin/aderyn
