@@ -9,6 +9,8 @@ import {Base64} from "@openzeppelin/contracts/utils/Base64.sol";
 error OwnableUnauthorizedAccount(address account);
 error TokenDoesNotExist(uint256 tokenId);
 
+event TokenURIUpdated(uint256 indexed tokenId, string previousURI, string newURI);
+
 contract MockERC20 is IERC20 {
     mapping(address => uint256) private _balances;
 
@@ -454,6 +456,68 @@ contract VariousPicturesCollectionTest is Test {
 
         vm.expectRevert(abi.encodeWithSignature("EmptyImage()"));
         collection.createTokenURI(validName, validDescription, emptyImage);
+    }
+
+    /**
+     * Test setTokenURI functionality *
+     */
+    function test_setTokenURI() public {
+        // First mint a token
+        vm.prank(owner);
+        collection.safeMintWithMetadata(user, TEST_NAME, TEST_DESCRIPTION, TEST_IMAGE);
+
+        string memory newURI = "https://example.com/new-metadata.json";
+
+        // Set new URI
+        vm.prank(owner);
+        collection.setTokenURI(0, newURI);
+
+        // Verify the URI was updated
+        assertEq(collection.tokenURI(0), newURI);
+    }
+
+    function test_Revert_setTokenURI_NotOwner() public {
+        // First mint a token
+        vm.prank(owner);
+        collection.safeMintWithMetadata(user, TEST_NAME, TEST_DESCRIPTION, TEST_IMAGE);
+
+        // Try to set URI as non-owner
+        vm.prank(user);
+        vm.expectRevert(abi.encodeWithSignature("OwnableUnauthorizedAccount(address)", user));
+        collection.setTokenURI(0, "https://example.com/new-metadata.json");
+    }
+
+    function test_Revert_setTokenURI_EmptyURI() public {
+        // First mint a token
+        vm.prank(owner);
+        collection.safeMintWithMetadata(user, TEST_NAME, TEST_DESCRIPTION, TEST_IMAGE);
+
+        // Try to set empty URI
+        vm.prank(owner);
+        vm.expectRevert(abi.encodeWithSignature("EmptyURI()"));
+        collection.setTokenURI(0, "");
+    }
+
+    function test_Revert_setTokenURI_NonexistentToken() public {
+        // Try to set URI for non-existent token
+        vm.prank(owner);
+        vm.expectRevert(abi.encodeWithSignature("TokenDoesNotExist(uint256)", 0));
+        collection.setTokenURI(0, "https://example.com/new-metadata.json");
+    }
+
+    function test_setTokenURI_EventEmitted() public {
+        // First mint a token
+        vm.prank(owner);
+        collection.safeMintWithMetadata(user, TEST_NAME, TEST_DESCRIPTION, TEST_IMAGE);
+
+        string memory oldURI = collection.tokenURI(0);
+        string memory newURI = "https://example.com/new-metadata.json";
+
+        // Set new URI and expect event
+        vm.prank(owner);
+        vm.expectEmit(true, false, false, true);
+        emit TokenURIUpdated(0, oldURI, newURI);
+        collection.setTokenURI(0, newURI);
     }
 
     receive() external payable {} // Allow contract to receive ETH

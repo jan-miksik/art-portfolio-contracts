@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
+/// @author: Jan Miksik
+
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import {IERC2981} from "@openzeppelin/contracts/interfaces/IERC2981.sol";
@@ -37,6 +39,7 @@ contract VariousPicturesCollection is ERC721, IERC2981, Ownable, ERC721Burnable,
     event MetadataURIUpdated(string previousURI, string newURI);
     event EtherWithdrawn(address indexed to, uint256 amount);
     event ERC20TokenWithdrawn(address indexed token, address indexed to, uint256 amount);
+    event TokenURIUpdated(uint256 indexed tokenId, string previousURI, string newURI);
 
     constructor(
         string memory collectionName,
@@ -233,6 +236,22 @@ contract VariousPicturesCollection is ERC721, IERC2981, Ownable, ERC721Burnable,
     function tokenURI(uint256 tokenId) public view override(ERC721, ERC721URIStorage) returns (string memory) {
         if (_ownerOf(tokenId) == address(0)) revert TokenDoesNotExist(tokenId);
         return super.tokenURI(tokenId);
+    }
+
+    /**
+     * @dev Sets the token URI for a specific token ID
+     * @param tokenId The ID of the token to update
+     * @param newURI The new URI to set for the token
+     * @notice Only the contract owner can call this function
+     * @notice Reverts if the token doesn't exist or if the new URI is empty
+     */
+    function setTokenURI(uint256 tokenId, string memory newURI) external onlyOwner {
+        if (_ownerOf(tokenId) == address(0)) revert TokenDoesNotExist(tokenId);
+        if (bytes(newURI).length == 0) revert EmptyURI();
+
+        string memory oldURI = tokenURI(tokenId);
+        _setTokenURI(tokenId, newURI);
+        emit TokenURIUpdated(tokenId, oldURI, newURI);
     }
 
     /**
