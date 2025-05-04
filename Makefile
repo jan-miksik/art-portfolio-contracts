@@ -47,14 +47,17 @@ TREZOR_ARGS := --trezor --mnemonic-indexes $(TREZOR_INDEX) --sender $(TREZOR_ADD
 # Network specific arguments
 SEPOLIA_ARGS := --rpc-url $(SEPOLIA_RPC_URL) --broadcast --verify --etherscan-api-key $(ETHERSCAN_API_KEY) -vvvv
 BASE_ARGS := --rpc-url $(BASE_RPC_URL) --broadcast --verify --etherscan-api-key $(BASE_SCAN_API_KEY) -vvvv
+BASE_SEPOLIA_ARGS := --rpc-url $(BASE_SEPOLIA_RPC_URL) --broadcast --verify --etherscan-api-key $(BASE_SCAN_API_KEY) -vvvv
 
 # Private key specific arguments
-SEPOLIA_KEY_ARGS := $(SEPOLIA_ARGS) --private-key $(SEPOLIA_PRIVATE_KEY)
-BASE_KEY_ARGS := $(BASE_ARGS) --private-key $(BASE_PRIVATE_KEY)
+SEPOLIA_KEY_ARGS := $(SEPOLIA_ARGS) --private-key $(TESTNETS_PRIVATE_KEY)
+BASE_KEY_ARGS := $(BASE_ARGS) --private-key $(TESTNETS_PRIVATE_KEY)
+BASE_SEPOLIA_KEY_ARGS := $(BASE_SEPOLIA_ARGS) --private-key $(TESTNETS_PRIVATE_KEY)
 
 # Trezor specific arguments
 SEPOLIA_TREZOR_ARGS := $(SEPOLIA_ARGS) $(TREZOR_ARGS)
 BASE_TREZOR_ARGS := $(BASE_ARGS) $(TREZOR_ARGS)
+BASE_SEPOLIA_TREZOR_ARGS := $(BASE_SEPOLIA_ARGS) $(TREZOR_ARGS)
 
 # Deployment commands
 deploy-local:
@@ -74,9 +77,17 @@ deploy-base:
 deploy-base-trezor:
 	@forge script script/DeployVariousPicturesCollection.s.sol:DeployVariousPicturesCollection $(BASE_TREZOR_ARGS)
 
+# Base Sepolia
+deploy-base-sepolia:
+	@forge script script/DeployVariousPicturesCollection.s.sol:DeployVariousPicturesCollection $(BASE_SEPOLIA_KEY_ARGS)
+
+deploy-base-sepolia-trezor:
+	@forge script script/DeployVariousPicturesCollection.s.sol:DeployVariousPicturesCollection $(BASE_SEPOLIA_TREZOR_ARGS)
 
 # Verification
-verify-contract :; forge verify-contract --chain-id ${CHAIN_ID} --num-of-optimizations 200 --watch ${CONTRACT_ADDRESS} ${CONTRACT_NAME} ${ETHERSCAN_API_KEY}
+verify-contract :; forge verify-contract --chain-id ${CHAIN_ID} --num-of-optimizations 200 --watch --etherscan-api-key ${BASE_SCAN_API_KEY} ${CONSTRUCTOR_ARGS} ${CONTRACT_ADDRESS} ${CONTRACT_NAME}
+# Example:
+# make verify-contract CHAIN_ID=84532 CONTRACT_ADDRESS=0xa5e956241831D82CBb803dE333D80DD72b8D8600 CONTRACT_NAME=VariousPicturesCollection CONSTRUCTOR_ARGS="--constructor-args $(cast abi-encode 'constructor(string,string,string,uint256)' 'Lorem Pictures base' 'LPIC' 'https://orange-manual-pony-405.mypinata.cloud/ipfs/bafkreicyjxcslspitw4tbkzh6atlnbfvcd3ogjsqwnwctmudrf2aaxra6q' 123)"
 
 # Documentation
 doc :; forge doc --serve --port 4000
