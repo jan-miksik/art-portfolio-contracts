@@ -42,7 +42,7 @@ all: clean remove install update build install-precommit
 NETWORK_ARGS := --rpc-url http://localhost:8545 --private-key $(DEFAULT_ANVIL_KEY) --broadcast
 
 # Hardware wallet configurations
-TREZOR_ARGS := --trezor --mnemonic-indexes $(TREZOR_INDEX) --sender $(TREZOR_ADDRESS)
+TREZOR_ARGS := --trezor --hd-paths "m/44'/60'/0'/0/$(TREZOR_INDEX)" --sender $(TREZOR_ADDRESS)
 
 # Network specific arguments
 SEPOLIA_ARGS := --rpc-url $(SEPOLIA_RPC_URL) --broadcast --verify --etherscan-api-key $(ETHERSCAN_API_KEY) -vvvv
