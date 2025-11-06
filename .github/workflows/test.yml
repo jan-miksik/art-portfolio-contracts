@@ -32,15 +32,16 @@ jobs:
         run: |
           forge --version
 
-      - name: Run Forge fmt (non-blocking)
+      - name: Run Forge fmt (non-blocking) #ignore new format rules errors and keep code aligned with the origin audit
         run: |
           forge fmt --check
         continue-on-error: true
         id: fmt
 
-      - name: Run Forge build
+      - name: Run Forge build (non-blocking) #ignore new lint rules errors and keep code aligned with the origin audit
         run: |
           forge build --sizes
+        continue-on-error: true
         id: build
 
       - name: Run Forge tests
