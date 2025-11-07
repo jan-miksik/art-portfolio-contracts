@@ -13,14 +13,17 @@ The contract doesn't limit NFT amounts. The collection is meant for releasing NF
 
  **Outsider**: Does not own NFTs of the Various Pictures Collection. Should not be able to do any writing operation on the contract.
 
-### Audit
+## Audit
 audit of the contracts [Art Portfolio Security audit.pdf](https://github.com/jan-miksik/art-portfolio-contracts/blob/652bb8e187cdb8020f41b277ab2c6f75f6ab6a63/Art%20Portfolio%20Security%20audit.pdf)
 
-### Deployed
+## Deployed
 Base [0xab5407d43cac7c7a64ed227fa23bb921e8e90ea9](https://basescan.org/address/0xab5407d43cac7c7a64ed227fa23bb921e8e90ea9)
 
-### Thanks to tools and courses
+## Thanks to tools and courses
 - foundry https://book.getfoundry.sh/
 - cyfrin https://updraft.cyfrin.io/courses
 - Slither https://github.com/crytic/slither
 - Aderyn https://github.com/Cyfrin/aderyn
+
+## License
+MIT License - see [LICENSE](LICENSE) file for details.
