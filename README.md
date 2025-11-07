@@ -1,4 +1,4 @@
-## About
+# About
 
 The contract is meant for personal art creation and publishing NFTs, because of that some parts of the contract may give a centralized impression. The contract should allow gradual minting of NFTs.
 
