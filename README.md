@@ -24,4 +24,4 @@ The contract doesn't limit NFT amounts. The collection is meant for releasing NF
 audit of the contracts [Art Portfolio Security audit.pdf](https://github.com/jan-miksik/art-portfolio-contracts/blob/652bb8e187cdb8020f41b277ab2c6f75f6ab6a63/Art%20Portfolio%20Security%20audit.pdf)
 
 ### Deployed
-[Base 0xab5407d43cac7c7a64ed227fa23bb921e8e90ea9](https://basescan.org/address/0xab5407d43cac7c7a64ed227fa23bb921e8e90ea9)
+Base [0xab5407d43cac7c7a64ed227fa23bb921e8e90ea9](https://basescan.org/address/0xab5407d43cac7c7a64ed227fa23bb921e8e90ea9)
