@@ -242,13 +242,13 @@ contract VariousPicturesCollectionTest is Test {
         // Fund the contract
         vm.deal(address(collection), 1 ether);
 
-        uint256 initialBalance = address(this).balance;
+        uint256 initialBalance = owner.balance;
 
         vm.prank(owner);
         collection.withdraw();
-        uint256 finalBalance = address(this).balance;
+        uint256 finalBalance = owner.balance;
 
-        assertEq(finalBalance - initialBalance, 0 ether);
+        assertEq(finalBalance - initialBalance, 1 ether);
     }
 
     function test_Revert_WithdrawNoEther() public {
